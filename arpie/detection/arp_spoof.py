@@ -9,7 +9,7 @@ spoofing / MITM signature.
 import time
 from collections import defaultdict
 
-from scapy.layers.l2 import ARP
+from scapy.all import ARP
 
 from . import Alert
 

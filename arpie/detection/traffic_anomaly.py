@@ -9,7 +9,7 @@ ICMP floods.
 import time
 from collections import defaultdict, deque
 
-from scapy.layers.inet import IP, TCP, UDP, ICMP
+from scapy.all import IP, TCP, UDP, ICMP
 
 from . import Alert
 

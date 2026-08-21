@@ -10,7 +10,7 @@ import time
 from collections import deque
 from typing import Optional
 
-from scapy.layers.l2 import ARP
+from scapy.all import ARP
 
 from . import Alert
 
