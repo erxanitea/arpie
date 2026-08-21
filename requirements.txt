@@ -1,0 +1,13 @@
+scapy>=2.5.0
+psutil>=5.9.0
+flet>=0.24.0
+requests>=2.31.0
+reportlab>=4.0.0
+pytest>=7.4.0
+
+# Optional: improves gateway detection on some platforms.
+# If unavailable, network_context.py falls back to CLI parsing.
+netifaces>=0.11.0; platform_system != "Windows" or python_version < "3.13"
+
+# Packaging (for building the .exe)
+pyinstaller>=6.0.0

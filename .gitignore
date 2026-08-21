@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.spec
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+arpie_session_*.json
+arpie_session_*.html
+arpie_session_*.pdf
+.env
