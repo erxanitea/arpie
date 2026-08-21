@@ -22,3 +22,5 @@ arpie_session_*.pdf
 /reportlab
 /pytest
 /netifaces
+tests/scapy
+arpie/scapy
