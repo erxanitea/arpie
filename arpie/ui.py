@@ -103,7 +103,22 @@ class ArpieApp:
         self.page.update()
 
         self.live_capture = LiveCapture(ctx.interface, self._on_packet)
-        self.capture_thread = threading.Thread(target=self.live_capture.start, daemon=True)
+
+        def _capture_worker():
+            try:
+                self.live_capture.start()
+            except PermissionError:
+                self.status_text.value = "Error: Live capture requires root/admin rights (raw sockets). Run with sudo or use PCAP replay."
+                self.start_btn.disabled = False
+                self.stop_btn.disabled = True
+                self.page.update()
+            except Exception as ex:
+                self.status_text.value = f"Capture error: {ex}"
+                self.start_btn.disabled = False
+                self.stop_btn.disabled = True
+                self.page.update()
+
+        self.capture_thread = threading.Thread(target=_capture_worker, daemon=True)
         self.capture_thread.start()
 
     def on_stop(self, e):
@@ -119,7 +134,7 @@ class ArpieApp:
     def on_replay(self, e):
         path = self.pcap_field.value
         if not path:
-            self.status_text.value = "Enter a PCAP path first."
+            self.status_text.value = "Enter a PCAP path first (e.g. sample_pcaps/demo_attack.pcap)."
             self.page.update()
             return
         ctx = detect_network_context()
@@ -133,10 +148,14 @@ class ArpieApp:
         replay = PcapReplay(path, self._on_packet)
 
         def run():
-            count = replay.run()
-            self.status_text.value = f"Replay complete — {count} packets processed."
-            self.db.end_session(self.session_id)
-            self.page.update()
+            try:
+                count = replay.run()
+                self.status_text.value = f"Replay complete — {count} packets processed."
+            except Exception as ex:
+                self.status_text.value = f"Replay error: {ex}"
+            finally:
+                self.db.end_session(self.session_id)
+                self.page.update()
 
         threading.Thread(target=run, daemon=True).start()
 
