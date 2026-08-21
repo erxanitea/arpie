@@ -9,9 +9,8 @@ ICMP floods.
 import time
 from collections import defaultdict, deque
 
-from scapy.all import IP, TCP, UDP, ICMP
-
-from . import Alert
+from scapy.layers.inet import IP, TCP, UDP, ICMP
+from .alert import Alert
 
 
 class TrafficRateRule:

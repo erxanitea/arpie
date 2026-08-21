@@ -10,9 +10,8 @@ import time
 from collections import deque
 from typing import Optional
 
-from scapy.all import ARP
-
-from . import Alert
+from scapy.layers.l2 import ARP
+from .alert import Alert
 
 
 class GatewayChangeRule:

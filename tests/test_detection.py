@@ -3,7 +3,8 @@ Detection-rule tests using synthetic Scapy packets (no live interface or
 real PCAP file required, so this runs anywhere — including CI).
 """
 
-from scapy.all import Ether, ARP, IP, TCP, UDP, ICMP
+from scapy.layers.l2 import Ether, ARP
+from scapy.layers.inet import IP, TCP, UDP, ICMP
 
 from arpie.detection.arp_spoof import ArpIdentityRule
 from arpie.detection.port_scan import PortScanRule

@@ -8,9 +8,8 @@ by one source within a 10-second (configurable) window.
 import time
 from collections import defaultdict
 
-from scapy.all import IP, TCP, UDP
-
-from . import Alert
+from scapy.layers.inet import IP, TCP, UDP
+from .alert import Alert
 
 
 class PortScanRule:

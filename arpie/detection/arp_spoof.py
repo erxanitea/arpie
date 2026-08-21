@@ -9,9 +9,8 @@ spoofing / MITM signature.
 import time
 from collections import defaultdict
 
-from scapy.all import ARP
-
-from . import Alert
+from scapy.layers.l2 import ARP
+from .alert import Alert
 
 
 class ArpIdentityRule:
