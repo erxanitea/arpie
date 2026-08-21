@@ -81,7 +81,7 @@ class ArpieApp:
             ft.Row([self.export_json_btn, self.export_html_btn, self.export_pdf_btn]),
             ft.Divider(),
             ft.Text("Real-Time Alerts", size=18, weight=ft.FontWeight.BOLD),
-            ft.Container(self.alert_list, expand=True, border=ft.border.all(1, ft.Colors.GREY_300),
+            ft.Container(self.alert_list, expand=True, border=ft.Border.all(1, ft.Colors.GREY_300),
                           border_radius=8, padding=10, height=350),
         )
 
@@ -194,7 +194,7 @@ class ArpieApp:
                 ft.Text(f"Recommended: {alert.recommended_action}", size=12, italic=True),
                 ft.Row([seal_btn]),
             ]),
-            border=ft.border.all(1, ft.Colors.GREY_300),
+            border=ft.Border.all(1, ft.Colors.GREY_300),
             border_radius=8, padding=12, bgcolor=ft.Colors.GREY_50,
         )
         self.alert_list.controls.append(card)
