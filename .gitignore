@@ -13,3 +13,12 @@ arpie_session_*.json
 arpie_session_*.html
 arpie_session_*.pdf
 .env
+
+# Workspace dependency symlinks for IDE resolution
+/scapy
+/psutil
+/flet
+/requests
+/reportlab
+/pytest
+/netifaces
