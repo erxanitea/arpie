@@ -1,0 +1,36 @@
+[project]
+name = "arpie"
+version = "0.1.0"
+description = "Context-Aware Endpoint NIDS for Public Wi-Fi"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "scapy>=2.5.0",
+    "psutil>=5.9.0",
+    "flet>=0.24.0",
+    "requests>=2.31.0",
+    "reportlab>=4.0.0",
+    "netifaces>=0.11.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+extraPaths = [
+    ".",
+    ".venv/lib/python3.14/site-packages",
+    "/home/erxanitea/.local/lib/python3.14/site-packages",
+]
+
+[tool.pyrefly]
+site-package-paths = [
+    ".venv/lib/python3.14/site-packages",
+    "/home/erxanitea/.local/lib/python3.14/site-packages",
+]
+search-paths = [
+    ".",
+    ".venv/lib/python3.14/site-packages",
+]
