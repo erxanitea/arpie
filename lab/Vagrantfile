@@ -1,0 +1,71 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-22.04"
+
+  # -------------------------------------------------------------
+  # VM 1: Victim (Runs Arpie NIDS)
+  # -------------------------------------------------------------
+  config.vm.define "victim" do |victim|
+    victim.vm.hostname = "arpie-victim"
+    victim.vm.network "private_network", ip: "192.168.56.10"
+    victim.vm.synced_folder "..", "/home/vagrant/arpie"
+
+    victim.vm.provider "virtualbox" do |vb|
+      vb.name = "Arpie-Victim"
+      vb.memory = "2048"
+      vb.cpus = 2
+      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    end
+
+    victim.vm.provision "shell", inline: <<-SHELL
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -y
+      apt-get install -y python3 python3-pip python3-venv libgl1 libgtk-3-0 libx11-xcb1 libasound2 iptables net-tools
+      
+      # Setup virtualenv for Arpie
+      sudo -u vagrant python3 -m venv /home/vagrant/arpie/.venv
+      sudo -u vagrant /home/vagrant/arpie/.venv/bin/pip install --upgrade pip
+      sudo -u vagrant /home/vagrant/arpie/.venv/bin/pip install -r /home/vagrant/arpie/requirements.txt
+      echo "Victim VM is ready! Run: cd /home/vagrant/arpie && sudo .venv/bin/python main.py"
+    SHELL
+  end
+
+  # -------------------------------------------------------------
+  # VM 2: Attacker (Runs Security Tools & simulate_attack.py)
+  # -------------------------------------------------------------
+  config.vm.define "attacker" do |attacker|
+    attacker.vm.hostname = "arpie-attacker"
+    attacker.vm.network "private_network", ip: "192.168.56.20"
+    attacker.vm.synced_folder "..", "/home/vagrant/arpie"
+
+    attacker.vm.provider "virtualbox" do |vb|
+      vb.name = "Arpie-Attacker"
+      vb.memory = "1536"
+      vb.cpus = 1
+      vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    end
+
+    attacker.vm.provision "shell", inline: <<-SHELL
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -y
+      apt-get install -y nmap hping3 dsniff net-tools python3 python3-pip python3-venv
+      
+      # Install Scapy for the attack simulator script
+      pip3 install scapy
+      
+      # Install Bettercap (optional binary)
+      if ! command -v bettercap &> /dev/null; then
+        apt-get install -y libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
+        wget -q https://github.com/bettercap/bettercap/releases/download/v2.32.0/bettercap_linux_amd64_v2.32.0.zip -O /tmp/bettercap.zip || true
+        if [ -f /tmp/bettercap.zip ]; then
+          apt-get install -y unzip
+          unzip -q -o /tmp/bettercap.zip -d /usr/local/bin/ || true
+          rm -f /tmp/bettercap.zip
+        fi
+      fi
+      echo "Attacker VM is ready! Run: sudo python3 /home/vagrant/arpie/tools/simulate_attack.py --target 192.168.56.10 --gateway 192.168.56.1"
+    SHELL
+  end
+end

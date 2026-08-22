@@ -18,13 +18,14 @@ from arpie.risk import score_alert, session_risk_score, risk_band
 from arpie.threat_intel import ThreatIntelClient
 
 
-def run_cli_pcap(path: str):
+def run_cli_pcap(path: str, gateway_ip: str | None = None):
     """Headless mode: replay a PCAP and print findings — used for grading/demo
     without needing a live capture-capable environment."""
     ctx = detect_network_context()
+    effective_gateway = gateway_ip or ctx.gateway_ip
     db = Database(CONFIG.db_path)
     intel = ThreatIntelClient(db, CONFIG.threat_intel)
-    engine = DetectionEngine(CONFIG.thresholds, gateway_ip=ctx.gateway_ip)
+    engine = DetectionEngine(CONFIG.thresholds, gateway_ip=effective_gateway)
     session_id = db.start_session(ctx.ssid, ctx.classification, ctx.interface, source=path)
 
     all_alerts = []
@@ -64,9 +65,10 @@ def run_gui():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Arpie — Endpoint NIDS for Public Wi-Fi")
     parser.add_argument("--pcap", help="Replay a PCAP file in headless CLI mode", default=None)
+    parser.add_argument("--gateway-ip", help="Override gateway IP (e.g. 192.168.1.1)", default=None)
     args = parser.parse_args()
 
     if args.pcap:
-        run_cli_pcap(args.pcap)
+        run_cli_pcap(args.pcap, gateway_ip=args.gateway_ip)
     else:
         run_gui()
