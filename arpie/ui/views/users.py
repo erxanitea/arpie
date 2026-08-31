@@ -57,7 +57,7 @@ def render_users_view(app) -> ft.Column:
         }]
 
     total_count = len(operators_list)
-    evaluator_count = sum(1 for o in operators_list if "Evaluator" in o.get("role", ""))
+    evaluator_count = sum(1 for o in operators_list if "Evaluator" in str(o.get("role", "")))
     end_user_count = total_count - evaluator_count
 
     stats_row = ft.Row([
@@ -90,10 +90,10 @@ def render_users_view(app) -> ft.Column:
 
     user_rows = []
     for op in operators_list:
-        uname = op.get("username", "")
-        email = op.get("email", "")
-        disp = op.get("display_name") or uname
-        role_label = op.get("role", "End User")
+        uname = str(op.get("username") or "")
+        email = str(op.get("email") or "")
+        disp = str(op.get("display_name") or uname)
+        role_label = str(op.get("role") or "End User")
 
         if app.active_user_role_filter != "All" and role_label != app.active_user_role_filter:
             continue
@@ -104,8 +104,14 @@ def render_users_view(app) -> ft.Column:
         ):
             continue
 
-        created_str = datetime.datetime.fromtimestamp(op.get("created_at") or time.time()).strftime("%Y-%m-%d %H:%M")
-        last_str = datetime.datetime.fromtimestamp(op.get("last_login_at") or time.time()).strftime("%Y-%m-%d %H:%M") if op.get("last_login_at") else "Active Session"
+        created_ts = float(op.get("created_at") or time.time())
+        created_str = datetime.datetime.fromtimestamp(created_ts).strftime("%Y-%m-%d %H:%M")
+        
+        last_login_raw = op.get("last_login_at")
+        if last_login_raw:
+            last_str = datetime.datetime.fromtimestamp(float(last_login_raw)).strftime("%Y-%m-%d %H:%M")
+        else:
+            last_str = "Active Session"
 
         user_rows.append(
             ft.DataRow(cells=[
