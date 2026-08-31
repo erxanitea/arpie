@@ -91,17 +91,11 @@ def render_alerts_view(app) -> ft.Column:
                         bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
                     ft.DataCell(
-                        ft.Container(
-                            content=ft.Row([
-                                ft.Icon(ft.Icons.VISIBILITY_OUTLINED, color="#0F172A" if not is_selected else "#FFFFFF", size=14),
-                                ft.Text("View", size=11, weight=ft.FontWeight.W_600, color="#0F172A" if not is_selected else "#FFFFFF"),
-                            ], spacing=4),
-                            bgcolor="#F8FAFC" if not is_selected else "#0F172A",
-                            border=ft.Border.all(1, "#CBD5E1" if not is_selected else "#0F172A"),
-                            border_radius=6,
-                            padding=ft.Padding.symmetric(horizontal=10, vertical=5),
+                        ft.IconButton(
+                            icon=ft.Icons.OPEN_IN_NEW_ROUNDED,
+                            icon_color="#475569" if not is_selected else "#DC2626",
+                            icon_size=18,
                             tooltip="View Evidence",
-                            ink=True,
                             on_click=lambda e, item=alert_item: select_alert(item),
                         )
                     ),
