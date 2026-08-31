@@ -12,25 +12,28 @@ dependencies = [
     "reportlab>=4.0.0",
     "netifaces>=0.11.0",
 ]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["arpie*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
 [tool.pyright]
 venvPath = "."
-venv = ".venv"
+venv = ".venv_arpie"
 extraPaths = [
     ".",
-    ".venv/lib/python3.14/site-packages",
-    "/home/erxanitea/.local/lib/python3.14/site-packages",
+    ".venv_arpie/lib/python3.14/site-packages",
 ]
 
 [tool.pyrefly]
+exclude = ["__pyrefly_virtual__/**"]
 site-package-paths = [
-    ".venv/lib/python3.14/site-packages",
-    "/home/erxanitea/.local/lib/python3.14/site-packages",
+    ".venv_arpie/lib/python3.14/site-packages",
 ]
 search-paths = [
     ".",
-    ".venv/lib/python3.14/site-packages",
+    ".venv_arpie/lib/python3.14/site-packages",
 ]
+
