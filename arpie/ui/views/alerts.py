@@ -36,14 +36,15 @@ def render_alerts_view(app) -> ft.Column:
 
     table_rows = []
     for alert_item in app.all_alerts_list:
-        time_str = alert_item["time"]
-        a_type = alert_item["type"]
-        sev = alert_item["severity"]
-        src = alert_item["source"]
-        status = alert_item["status"]
-        fgc = alert_item["fg"]
-        bgc = alert_item["bg"]
-        ev_desc = alert_item["desc"]
+        time_str = alert_item.get("time", "")
+        a_type = alert_item.get("type", "")
+        sev = alert_item.get("severity", "")
+        src = alert_item.get("source", "")
+        target = alert_item.get("target", "Local Endpoint")
+        status = alert_item.get("status", "NEW")
+        fgc = alert_item.get("fg", "#DC2626")
+        bgc = alert_item.get("bg", "#FEE2E2")
+        ev_desc = alert_item.get("desc", "")
 
         if app.active_severity_filter != "All" and sev.lower() != app.active_severity_filter.lower():
             continue
@@ -55,23 +56,38 @@ def render_alerts_view(app) -> ft.Column:
                 cells=[
                     ft.DataCell(ft.Text(time_str, size=12, color="#64748B")),
                     ft.DataCell(
-                        ft.Container(
-                            content=ft.Row([
-                                ft.Icon(ft.Icons.SHIELD_ROUNDED if "ARP" in a_type else ft.Icons.WARNING_ROUNDED, color=fgc, size=14),
-                                ft.Text(a_type, size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
-                            ], spacing=6),
-                            on_click=lambda e, t=a_type, s=sev, ip=src, d=ev_desc: show_evidence_dialog(app, t, s, ip, d),
-                        )
+                        ft.Row([
+                            ft.Icon(ft.Icons.SHIELD_ROUNDED if "ARP" in a_type else ft.Icons.WARNING_ROUNDED, color=fgc, size=15),
+                            ft.Text(a_type, size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
+                        ], spacing=6)
                     ),
                     ft.DataCell(ft.Container(
                         content=ft.Text(sev, size=10, weight=ft.FontWeight.BOLD, color=fgc),
-                        bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                        bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(horizontal=8, vertical=3),
                     )),
-                    ft.DataCell(ft.Text(src, size=12, color="#0F172A")),
+                    ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_500, color="#0F172A")),
+                    ft.DataCell(ft.Text(target, size=12, color="#475569")),
+                    ft.DataCell(ft.Container(
+                        content=ft.Text("100%", size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
+                        bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                    )),
                     ft.DataCell(ft.Container(
                         content=ft.Text(status, size=10, weight=ft.FontWeight.BOLD, color="#64748B"),
                         bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
+                    ft.DataCell(
+                        ft.ElevatedButton(
+                            "Investigate Evidence",
+                            icon=ft.Icons.SAVED_SEARCH_ROUNDED,
+                            style=ft.ButtonStyle(
+                                bgcolor="#0F172A",
+                                color="#FFFFFF",
+                                shape=ft.RoundedRectangleBorder(radius=6),
+                                padding=ft.Padding.symmetric(horizontal=10, vertical=6),
+                            ),
+                            on_click=lambda e, t=a_type, s=sev, ip=src, d=ev_desc: show_evidence_dialog(app, t, s, ip, d),
+                        )
+                    ),
                 ],
             )
         )
@@ -79,15 +95,19 @@ def render_alerts_view(app) -> ft.Column:
     alerts_table = ft.DataTable(
         columns=[
             ft.DataColumn(label=ft.Text("TIME", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
-            ft.DataColumn(label=ft.Text("TYPE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("THREAT TYPE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("SEVERITY", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
-            ft.DataColumn(label=ft.Text("SOURCE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("SOURCE IP", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("TARGET", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("CONFIDENCE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("STATUS", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("ACTIONS / EVIDENCE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
         ],
         rows=table_rows,
-        heading_row_height=40,
-        data_row_min_height=42,
-        data_row_max_height=46,
+        heading_row_height=42,
+        data_row_min_height=46,
+        data_row_max_height=50,
+        column_spacing=24,
         horizontal_lines=ft.BorderSide(1, "#F1F5F9"),
         show_checkbox_column=False,
     )
@@ -109,13 +129,13 @@ def render_alerts_view(app) -> ft.Column:
         ),
         ft.Container(
             content=ft.Column([
-                alerts_table,
+                ft.Row([alerts_table], scroll=ft.ScrollMode.AUTO),
                 ft.Divider(color="#F1F5F9", height=10),
                 ft.Row([
                     ft.Text(f"Showing {len(table_rows)} alerts this session", size=12, color="#94A3B8"),
                     ft.Row([
                         ft.Icon(ft.Icons.TOUCH_APP_ROUNDED, size=14, color="#94A3B8"),
-                        ft.Text("Click an alert name to inspect evidence", size=12, color="#94A3B8"),
+                        ft.Text("Click 'Investigate Evidence' to review deterministic proof metrics", size=12, color="#94A3B8"),
                     ], spacing=4),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             ]),
