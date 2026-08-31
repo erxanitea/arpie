@@ -64,15 +64,17 @@ def render_alerts_view(app) -> ft.Column:
 
         table_rows.append(
             ft.DataRow(
-                selected=is_selected,
-                on_select_change=lambda e, item=alert_item: select_alert(item),
                 cells=[
                     ft.DataCell(ft.Text(time_str, size=12, color="#64748B")),
                     ft.DataCell(
-                        ft.Row([
-                            ft.Icon(ft.Icons.SHIELD_ROUNDED if "ARP" in a_type else ft.Icons.WARNING_ROUNDED, color=fgc, size=15),
-                            ft.Text(a_type, size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
-                        ], spacing=6)
+                        ft.Container(
+                            content=ft.Row([
+                                ft.Icon(ft.Icons.SHIELD_ROUNDED if "ARP" in a_type else ft.Icons.WARNING_ROUNDED, color=fgc, size=15),
+                                ft.Text(a_type, size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
+                            ], spacing=6),
+                            tooltip="View Evidence",
+                            on_click=lambda e, item=alert_item: select_alert(item),
+                        )
                     ),
                     ft.DataCell(ft.Container(
                         content=ft.Text(sev, size=10, weight=ft.FontWeight.BOLD, color=fgc),
@@ -91,13 +93,14 @@ def render_alerts_view(app) -> ft.Column:
                     ft.DataCell(
                         ft.Container(
                             content=ft.Row([
-                                ft.Icon(ft.Icons.SAVED_SEARCH_ROUNDED, color="#0F172A" if not is_selected else "#FFFFFF", size=14),
-                                ft.Text("Evidence", size=11, weight=ft.FontWeight.W_600, color="#0F172A" if not is_selected else "#FFFFFF"),
+                                ft.Icon(ft.Icons.VISIBILITY_OUTLINED, color="#0F172A" if not is_selected else "#FFFFFF", size=14),
+                                ft.Text("View", size=11, weight=ft.FontWeight.W_600, color="#0F172A" if not is_selected else "#FFFFFF"),
                             ], spacing=4),
                             bgcolor="#F8FAFC" if not is_selected else "#0F172A",
                             border=ft.Border.all(1, "#CBD5E1" if not is_selected else "#0F172A"),
                             border_radius=6,
                             padding=ft.Padding.symmetric(horizontal=10, vertical=5),
+                            tooltip="View Evidence",
                             ink=True,
                             on_click=lambda e, item=alert_item: select_alert(item),
                         )
@@ -142,7 +145,7 @@ def render_alerts_view(app) -> ft.Column:
                 ft.Text(f"Showing {len(table_rows)} alerts this session", size=12, color="#94A3B8"),
                 ft.Row([
                     ft.Icon(ft.Icons.TOUCH_APP_ROUNDED, size=14, color="#94A3B8"),
-                    ft.Text("Click any row or 'Evidence' button to open side inspector", size=12, color="#94A3B8"),
+                    ft.Text("Click 'View' to inspect deterministic proof metrics", size=12, color="#94A3B8"),
                 ], spacing=4),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
         ]),
