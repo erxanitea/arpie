@@ -58,6 +58,7 @@ class ArpieApp:
             "arp_window": "5",
         }
 
+        self.selected_alert: Optional[dict] = None
         self.session_id: Optional[int] = None
         self.engine: Optional[DetectionEngine] = None
         self.seal_mgr: Optional[SealManager] = None
