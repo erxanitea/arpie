@@ -65,7 +65,7 @@ def render_alerts_view(app) -> ft.Column:
         table_rows.append(
             ft.DataRow(
                 selected=is_selected,
-                on_select_changed=lambda e, item=alert_item: select_alert(item),
+                on_select_change=lambda e, item=alert_item: select_alert(item),
                 cells=[
                     ft.DataCell(ft.Text(time_str, size=12, color="#64748B")),
                     ft.DataCell(
