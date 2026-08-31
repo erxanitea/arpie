@@ -1,3 +1,4 @@
+import datetime
 import flet as ft
 
 
@@ -44,8 +45,11 @@ def render_alerts_view(app) -> ft.Column:
         app.page.update()
 
     table_rows = []
+    today_date = datetime.datetime.now().strftime("%Y-%m-%d")
+
     for alert_item in app.all_alerts_list:
         time_str = alert_item.get("time", "")
+        date_str = alert_item.get("date", today_date)
         a_type = alert_item.get("type", "")
         sev = alert_item.get("severity", "")
         src = alert_item.get("source", "")
@@ -65,7 +69,12 @@ def render_alerts_view(app) -> ft.Column:
         table_rows.append(
             ft.DataRow(
                 cells=[
-                    ft.DataCell(ft.Text(time_str, size=12, color="#64748B")),
+                    ft.DataCell(
+                        ft.Column([
+                            ft.Text(time_str, size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
+                            ft.Text(date_str, size=10, color="#94A3B8"),
+                        ], spacing=1, alignment=ft.MainAxisAlignment.CENTER)
+                    ),
                     ft.DataCell(
                         ft.Container(
                             content=ft.Row([
@@ -78,17 +87,17 @@ def render_alerts_view(app) -> ft.Column:
                     ),
                     ft.DataCell(ft.Container(
                         content=ft.Text(sev, size=10, weight=ft.FontWeight.BOLD, color=fgc),
-                        bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(horizontal=8, vertical=3),
+                        bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(8, 3),
                     )),
                     ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_600, color="#0F172A")),
                     ft.DataCell(ft.Text(target, size=12, color="#475569")),
                     ft.DataCell(ft.Container(
                         content=ft.Text("100%", size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
-                        bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                        bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(6, 2),
                     )),
                     ft.DataCell(ft.Container(
                         content=ft.Text(status, size=10, weight=ft.FontWeight.BOLD, color="#64748B"),
-                        bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                        bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(6, 2),
                     )),
                     ft.DataCell(
                         ft.IconButton(
@@ -105,7 +114,7 @@ def render_alerts_view(app) -> ft.Column:
 
     alerts_table = ft.DataTable(
         columns=[
-            ft.DataColumn(label=ft.Text("TIME", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("TIMESTAMP", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("THREAT TYPE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("SEVERITY", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("SOURCE IP", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
@@ -116,9 +125,9 @@ def render_alerts_view(app) -> ft.Column:
         ],
         rows=table_rows,
         heading_row_height=42,
-        data_row_min_height=46,
-        data_row_max_height=50,
-        column_spacing=20 if app.selected_alert else 38,
+        data_row_min_height=48,
+        data_row_max_height=52,
+        column_spacing=20 if app.selected_alert else 54,
         horizontal_lines=ft.BorderSide(1, "#F1F5F9"),
         show_checkbox_column=False,
     )
@@ -139,7 +148,7 @@ def render_alerts_view(app) -> ft.Column:
                 ft.Text(f"Showing {len(table_rows)} alerts this session", size=12, color="#94A3B8"),
                 ft.Row([
                     ft.Icon(ft.Icons.TOUCH_APP_ROUNDED, size=14, color="#94A3B8"),
-                    ft.Text("Click 'View' to inspect deterministic proof metrics", size=12, color="#94A3B8"),
+                    ft.Text("Click any row or ↗ icon to inspect deterministic proof metrics", size=12, color="#94A3B8"),
                 ], spacing=4),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
         ]),
@@ -159,6 +168,7 @@ def render_alerts_view(app) -> ft.Column:
         sel_fg = sel.get("fg", "#DC2626")
         sel_bg = sel.get("bg", "#FEE2E2")
         sel_time = sel.get("time", "")
+        sel_date = sel.get("date", today_date)
 
         def quick_seal(e, ip=sel_src):
             app.active_blocks.append({
@@ -192,10 +202,10 @@ def render_alerts_view(app) -> ft.Column:
                             ft.Text(sel_type, size=13, weight=ft.FontWeight.BOLD, color="#0F172A"),
                             ft.Container(
                                 content=ft.Text(sel_sev, size=9, weight=ft.FontWeight.BOLD, color=sel_fg),
-                                bgcolor=sel_bg, border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                                bgcolor=sel_bg, border_radius=4, padding=ft.Padding.symmetric(6, 2),
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Text(f"Detected at {sel_time}", size=11, color="#64748B"),
+                        ft.Text(f"Detected on {sel_date} at {sel_time}", size=11, color="#64748B"),
                         ft.Text(sel_desc, size=12, color="#334155"),
                     ], spacing=6),
                     bgcolor="#F8FAFC", border=ft.Border.all(1, "#E2E8F0"), border_radius=8, padding=12,
@@ -238,7 +248,7 @@ def render_alerts_view(app) -> ft.Column:
                             ft.Text("Abuse Confidence Score:", size=11, color="#64748B"),
                             ft.Container(
                                 content=ft.Text("98% Malicious" if "192.168.1.50" in sel_src or "192.168.1.1" in sel_src else "Clean (0%)", size=10, weight=ft.FontWeight.BOLD, color="#DC2626"),
-                                bgcolor="#FEE2E2", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                                bgcolor="#FEE2E2", border_radius=4, padding=ft.Padding.symmetric(6, 2),
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([
