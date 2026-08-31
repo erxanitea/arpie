@@ -5,9 +5,16 @@ Desktop app:   python main.py
 CLI PCAP mode: python main.py --pcap path/to/file.pcap
 """
 
+import os
+import sys
+
+os.environ["GTK_A11Y"] = "none"
+os.environ["GDK_DEBUG"] = "misc"
+os.environ["G_MESSAGES_DEBUG"] = ""
+
 import argparse
 import json
-import sys
+
 
 from arpie.config import CONFIG
 from arpie.db import Database

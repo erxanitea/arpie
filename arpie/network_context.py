@@ -14,7 +14,7 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Optional
 
-import psutil
+import psutil  # type: ignore[import-untyped]
 
 
 @dataclass
@@ -42,7 +42,7 @@ def _default_interface() -> str:
 
 def _get_gateway_ip() -> Optional[str]:
     try:
-        import netifaces  # optional dependency, see requirements.txt
+        import netifaces  # type: ignore[import-not-found,import-untyped]
         gws = netifaces.gateways()
         default = gws.get("default", {})
         for fam in (netifaces.AF_INET, netifaces.AF_INET6):
@@ -91,12 +91,40 @@ def _get_ssid() -> Optional[str]:
             m = re.search(r"\bSSID: (.+)", out)
             return m.group(1).strip() if m else None
         elif system == "Linux":
-            out = subprocess.check_output(["iwgetid", "-r"], text=True, timeout=3)
-            ssid = out.strip()
-            return ssid or None
+            # Check nmcli (NetworkManager - standard on modern Linux desktops)
+            try:
+                out = subprocess.check_output(
+                    ["nmcli", "-t", "-f", "active,ssid", "dev", "wifi"],
+                    text=True, timeout=3, stderr=subprocess.DEVNULL
+                )
+                for line in out.splitlines():
+                    if line.startswith("yes:"):
+                        ssid = line.split(":", 1)[1].strip()
+                        if ssid:
+                            return ssid
+            except Exception:
+                pass
+            # Fallback to iwgetid
+            try:
+                out = subprocess.check_output(["iwgetid", "-r"], text=True, timeout=3, stderr=subprocess.DEVNULL)
+                ssid = out.strip()
+                if ssid:
+                    return ssid
+            except Exception:
+                pass
+            # Fallback to iw
+            try:
+                out = subprocess.check_output(["iw", "dev"], text=True, timeout=3, stderr=subprocess.DEVNULL)
+                m = re.search(r"\bssid\s+(.+)$", out, re.MULTILINE)
+                if m:
+                    return m.group(1).strip()
+            except Exception:
+                pass
+            return None
+        return None
     except Exception:
         return None
-    return None
+
 
 
 def classify_network(ssid: Optional[str], known_trusted_ssids: list) -> str:
