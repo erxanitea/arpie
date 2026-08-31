@@ -1,5 +1,3 @@
-import datetime
-import time
 import flet as ft
 from .profile import _make_param_field
 
@@ -30,7 +28,7 @@ def render_settings_view(app) -> ft.Column:
         can_reveal_password=True,
         border_radius=8,
         dense=True,
-        prefix_icon=ft.Icons.KEY_ROUNDED,
+        prefix_icon=ft.Icons.LOCK_OUTLINE_ROUNDED,
         hint_text="Leave blank to keep unchanged",
     )
     op_status_text = ft.Text("", size=12, weight=ft.FontWeight.W_600, visible=False)
@@ -130,74 +128,7 @@ def render_settings_view(app) -> ft.Column:
         bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=20,
     )
 
-    # --- User Account Information Table Card ---
-    operators_list = app.db.list_operators() if hasattr(app.db, "list_operators") else []
-    if not operators_list:
-        operators_list = [{
-            "id": app.operator_id or 1,
-            "display_name": app.user_name or "Operator",
-            "username": app.operator_username or "admin",
-            "email": app.operator_email or "admin@arpie.local",
-            "role": app.user_role,
-            "created_at": time.time(),
-            "last_login_at": time.time(),
-        }]
-
-    user_rows = []
-    for op in operators_list:
-        last_str = datetime.datetime.fromtimestamp(op.get("last_login_at") or time.time()).strftime("%Y-%m-%d %H:%M") if op.get("last_login_at") else "Active"
-        role_label = op.get("role", "End User")
-        user_rows.append(
-            ft.DataRow(cells=[
-                ft.DataCell(ft.Text(str(op.get("id")), size=12, color="#64748B")),
-                ft.DataCell(ft.Text(op.get("display_name") or op.get("username", "User"), size=12, weight=ft.FontWeight.BOLD, color="#0F172A")),
-                ft.DataCell(ft.Text(op.get("username", ""), size=12, color="#0F172A")),
-                ft.DataCell(ft.Text(op.get("email", ""), size=12, color="#475569")),
-                ft.DataCell(ft.Container(
-                    content=ft.Text(role_label, size=10, weight=ft.FontWeight.BOLD, color="#8B5CF6" if "Evaluator" in role_label else "#10B981"),
-                    bgcolor="#F5F3FF" if "Evaluator" in role_label else "#ECFDF5",
-                    border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
-                )),
-                ft.DataCell(ft.Container(
-                    content=ft.Text("Active", size=10, weight=ft.FontWeight.BOLD, color="#10B981"),
-                    bgcolor="#ECFDF5",
-                    border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
-                )),
-                ft.DataCell(ft.Text(last_str, size=12, color="#64748B")),
-            ])
-        )
-
-    user_table = ft.DataTable(
-        columns=[
-            ft.DataColumn(label=ft.Text("UserID", size=11, weight=ft.FontWeight.BOLD)),
-            ft.DataColumn(label=ft.Text("FullName", size=11, weight=ft.FontWeight.BOLD)),
-            ft.DataColumn(label=ft.Text("Username", size=11, weight=ft.FontWeight.BOLD)),
-            ft.DataColumn(label=ft.Text("Email", size=11, weight=ft.FontWeight.BOLD)),
-            ft.DataColumn(label=ft.Text("Role", size=11, weight=ft.FontWeight.BOLD)),
-            ft.DataColumn(label=ft.Text("Status", size=11, weight=ft.FontWeight.BOLD)),
-            ft.DataColumn(label=ft.Text("LastLogin", size=11, weight=ft.FontWeight.BOLD)),
-        ],
-        rows=user_rows,
-        heading_row_height=40,
-        data_row_min_height=42,
-    )
-
-    user_table_card = ft.Container(
-        content=ft.Column([
-            ft.Row([
-                ft.Icon(ft.Icons.PEOPLE_ROUNDED, color="#0F172A", size=22),
-                ft.Column([
-                    ft.Text("User Account Information", size=16, weight=ft.FontWeight.BOLD, color="#0F172A"),
-                    ft.Text("Registered system operators and RBAC role assignments.", size=12, color="#64748B"),
-                ], spacing=1),
-            ], spacing=10),
-            ft.Divider(color="#E2E8F0", height=12),
-            ft.Row([user_table], scroll=ft.ScrollMode.AUTO),
-        ], spacing=10),
-        bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=20,
-    )
-
-    cards: list[ft.Control] = [operator_card, user_table_card]
+    cards: list[ft.Control] = [operator_card]
 
     if is_evaluator:
         abuse_field = ft.TextField(label="AbuseIPDB API Key", password=True, can_reveal_password=True, value="••••••••••••••••••••••••", border_radius=8, dense=True)

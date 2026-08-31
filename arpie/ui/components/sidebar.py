@@ -10,6 +10,7 @@ def build_sidebar(app) -> ft.Container:
         ("packets", "Packet Logs", ft.Icons.ARTICLE_OUTLINED, ft.Icons.ARTICLE_ROUNDED, None),
         ("seal", "Seal Mode", ft.Icons.SECURITY_OUTLINED, ft.Icons.SECURITY_ROUNDED, str(len(app.active_blocks))),
         ("reports", "Reports", ft.Icons.INSERT_CHART_OUTLINED, ft.Icons.INSERT_CHART_ROUNDED, None),
+        ("users", "Users", ft.Icons.PEOPLE_OUTLINED, ft.Icons.PEOPLE_ROUNDED, None),
         ("settings", "Settings", ft.Icons.SETTINGS_OUTLINED, ft.Icons.SETTINGS_ROUNDED, None),
     ]
 
