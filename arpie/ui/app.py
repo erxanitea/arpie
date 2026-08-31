@@ -30,6 +30,7 @@ from .views.register import render_register_screen
 from .views.reports import render_reports_view
 from .views.seal import render_seal_view
 from .views.settings import render_settings_view
+from .views.users import render_users_view
 
 
 class ArpieApp:
@@ -58,6 +59,7 @@ class ArpieApp:
             "arp_window": "5",
         }
 
+        self.selected_alert: Optional[dict] = None
         self.session_id: Optional[int] = None
         self.engine: Optional[DetectionEngine] = None
         self.seal_mgr: Optional[SealManager] = None
@@ -191,6 +193,7 @@ class ArpieApp:
             "packets": ("Packet Capture Logs", "Live inspection and recorded packet stream replay"),
             "seal": ("Seal Mode Mitigation", "Reversible endpoint threat response and network isolation"),
             "reports": ("Forensic Reports", "Automated incident reports, threat summaries, and exports"),
+            "users": ("User Accounts", "Registered system operators and RBAC role assignments"),
             "settings": ("System Configuration", "Heuristic thresholds, threat intel feeds, and rules"),
         }
         title, subtitle = title_map.get(self.current_view, ("Arpie", ""))
@@ -212,6 +215,7 @@ class ArpieApp:
             "packets": render_packets_view,
             "seal": render_seal_view,
             "reports": render_reports_view,
+            "users": render_users_view,
             "settings": render_settings_view,
         }
         render_fn = view_map.get(self.current_view)
