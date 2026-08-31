@@ -25,7 +25,7 @@ def render_alerts_view(app) -> ft.Column:
     ], spacing=8)
 
     search_input = ft.TextField(
-        hint_text="Search alerts by IP, type or evidence...",
+        hint_text="Search alerts by IP, threat type or evidence proof...",
         prefix_icon=ft.Icons.SEARCH_ROUNDED,
         dense=True,
         border_radius=8,
@@ -65,7 +65,7 @@ def render_alerts_view(app) -> ft.Column:
                         content=ft.Text(sev, size=10, weight=ft.FontWeight.BOLD, color=fgc),
                         bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(horizontal=8, vertical=3),
                     )),
-                    ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_500, color="#0F172A")),
+                    ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_600, color="#0F172A")),
                     ft.DataCell(ft.Text(target, size=12, color="#475569")),
                     ft.DataCell(ft.Container(
                         content=ft.Text("100%", size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
@@ -76,15 +76,16 @@ def render_alerts_view(app) -> ft.Column:
                         bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
                     ft.DataCell(
-                        ft.ElevatedButton(
-                            "Investigate Evidence",
-                            icon=ft.Icons.SAVED_SEARCH_ROUNDED,
-                            style=ft.ButtonStyle(
-                                bgcolor="#0F172A",
-                                color="#FFFFFF",
-                                shape=ft.RoundedRectangleBorder(radius=6),
-                                padding=ft.Padding.symmetric(horizontal=10, vertical=6),
-                            ),
+                        ft.Container(
+                            content=ft.Row([
+                                ft.Icon(ft.Icons.SAVED_SEARCH_ROUNDED, color="#0F172A", size=14),
+                                ft.Text("Evidence", size=11, weight=ft.FontWeight.W_600, color="#0F172A"),
+                            ], spacing=4),
+                            bgcolor="#F8FAFC",
+                            border=ft.Border.all(1, "#CBD5E1"),
+                            border_radius=6,
+                            padding=ft.Padding.symmetric(horizontal=10, vertical=5),
+                            ink=True,
                             on_click=lambda e, t=a_type, s=sev, ip=src, d=ev_desc: show_evidence_dialog(app, t, s, ip, d),
                         )
                     ),
@@ -101,13 +102,13 @@ def render_alerts_view(app) -> ft.Column:
             ft.DataColumn(label=ft.Text("TARGET", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("CONFIDENCE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
             ft.DataColumn(label=ft.Text("STATUS", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
-            ft.DataColumn(label=ft.Text("ACTIONS / EVIDENCE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
+            ft.DataColumn(label=ft.Text("ACTION", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8")),
         ],
         rows=table_rows,
         heading_row_height=42,
         data_row_min_height=46,
         data_row_max_height=50,
-        column_spacing=24,
+        column_spacing=38,
         horizontal_lines=ft.BorderSide(1, "#F1F5F9"),
         show_checkbox_column=False,
     )
@@ -129,13 +130,21 @@ def render_alerts_view(app) -> ft.Column:
         ),
         ft.Container(
             content=ft.Column([
+                ft.Row([
+                    ft.Row([
+                        ft.Icon(ft.Icons.SHIELD_ROUNDED, color="#0F172A", size=20),
+                        ft.Text("Security Events & Alerts", size=15, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                    ], spacing=8),
+                    ft.Text(f"{len(table_rows)} Incidents Logged", size=12, color="#64748B"),
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Divider(color="#E2E8F0", height=12),
                 ft.Row([alerts_table], scroll=ft.ScrollMode.AUTO),
                 ft.Divider(color="#F1F5F9", height=10),
                 ft.Row([
                     ft.Text(f"Showing {len(table_rows)} alerts this session", size=12, color="#94A3B8"),
                     ft.Row([
                         ft.Icon(ft.Icons.TOUCH_APP_ROUNDED, size=14, color="#94A3B8"),
-                        ft.Text("Click 'Investigate Evidence' to review deterministic proof metrics", size=12, color="#94A3B8"),
+                        ft.Text("Click 'Evidence' to review deterministic proof metrics", size=12, color="#94A3B8"),
                     ], spacing=4),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
             ]),
