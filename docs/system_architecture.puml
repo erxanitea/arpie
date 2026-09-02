@@ -1,0 +1,132 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam monochrome false
+skinparam handwritten false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+
+skinparam actor {
+    BackgroundColor #F8FAFC
+    BorderColor #0F172A
+}
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #334155
+}
+skinparam database {
+    BackgroundColor #F1F5F9
+    BorderColor #0F172A
+}
+
+actor "End User\n(Student/Remote Worker)" as User #ECFDF5
+actor "Evaluator / Administrator" as Admin #F5F3FF
+
+actor "AbuseIPDB & IPinfo Lite" as Ext_Intel <<External API>> #EFF6FF
+actor "OS Firewall & System\n(iptables / notify-send)" as Ext_OS <<Subsystem>> #EFF6FF
+
+Admin -up-|> User
+
+package "Arpie: Context-Aware Endpoint NIDS & Response" {
+
+    package "Presentation Layer (Flet UI)" {
+        rectangle "Authentication & Setup Wizard" as UI_Auth
+        rectangle "Real-Time Threat Monitoring Dashboard" as UI_Dash
+        rectangle "Security Events & Alerts Table" as UI_Alerts
+        rectangle "Incident Evidence & Threat Intel Drawer" as UI_Evidence
+        rectangle "Network Context & Connected Devices" as UI_NetCtx
+        rectangle "Live Packet Capture Stream" as UI_Packets
+        rectangle "Seal Actions & Host Containment" as UI_Seal
+        rectangle "Monitoring Session Details" as UI_Session
+        rectangle "User Account & Role Management" as UI_Users
+        rectangle "System Configuration & Threshold Tuning" as UI_Config
+        rectangle "Forensic Report Generator (ReportLab)" as UI_Reports
+    }
+
+    package "Core Detection & Sniffing Engine (Python/Scapy)" {
+        rectangle "Packet Sniffer (Scapy / psutil)" as Engine_Sniffer
+        rectangle "ARP Identity Inconsistency Analyzer\n(>1 MAC per IP in 5m)" as Det_ARP
+        rectangle "Port-Scan Behavior Detector\n(>15 ports in 10s)" as Det_Scan
+        rectangle "Traffic-Rate Anomaly Detector\n(>100 pkts/s SYN/UDP/ICMP)" as Det_Flood
+        rectangle "Gateway Identity Change Monitor\n(Gateway IP/MAC change in 10m)" as Det_Gateway
+        rectangle "PCAP Replay & Attack Simulator" as Engine_Replay
+    }
+
+    package "Response & Orchestration Engine" {
+        rectangle "Seal Mode Controller (iptables manager)" as Resp_Seal
+        rectangle "Notification Dispatcher (notify-send)" as Resp_Notif
+        rectangle "Threat Intel Client" as Resp_Intel
+    }
+
+    database "SQLite Storage Layer" {
+        database "User Accounts & Roles" as DB_Users
+        database "Security Events & Alerts" as DB_Alerts
+        database "Incident Evidence Details" as DB_Evidence
+        database "Threat Intelligence Cache" as DB_Intel
+        database "Network Context & Devices" as DB_Devices
+        database "Monitoring Session Details" as DB_Sessions
+        database "Packet Logs" as DB_Packets
+        database "Seal Actions" as DB_Seal
+        database "System Configuration" as DB_Config
+    }
+}
+
+User --> UI_Auth : Authenticates
+User --> UI_Dash : Monitors Real-Time Traffic & Risk Score
+User --> UI_Alerts : Reviews Alerts & Attack Types
+User --> UI_Evidence : Inspects Attack Proof & Attacker IP
+User --> UI_NetCtx : Inspects Wi-Fi Trust Level & Devices
+User --> UI_Packets : Views Live Raw Packet Stream
+User --> UI_Seal : Triggers 1-Click Host Containment
+User --> UI_Reports : Exports Session Forensics
+
+Admin --> UI_Users : Manages Accounts & Role Permissions
+Admin --> UI_Config : Sets Detection Baselines & API Credentials
+Admin --> Engine_Replay : Replays PCAP & Calibrates Detection Rules
+Admin --> UI_Session : Audits Session Logs & Risk Ratings
+
+UI_Evidence --> Resp_Intel : Queries IP Reputation
+Resp_Intel --> Ext_Intel : Fetch Reputation & Country Data
+Resp_Intel --> DB_Intel : Cache Results
+
+UI_Seal --> Resp_Seal : Execute Quarantine / Release
+Resp_Seal --> Ext_OS : Apply / Remove iptables Rules
+Resp_Seal --> DB_Seal : Log Containment History
+
+Engine_Sniffer --> Det_ARP
+Engine_Sniffer --> Det_Scan
+Engine_Sniffer --> Det_Flood
+Engine_Sniffer --> Det_Gateway
+Engine_Sniffer --> DB_Packets
+
+Det_ARP --> DB_Alerts
+Det_Scan --> DB_Alerts
+Det_Flood --> DB_Alerts
+Det_Gateway --> DB_Alerts
+
+Det_ARP --> DB_Evidence
+Det_Scan --> DB_Evidence
+Det_Flood --> DB_Evidence
+Det_Gateway --> DB_Evidence
+
+Det_ARP ..> Resp_Notif : Trigger Alert
+Det_Scan ..> Resp_Notif : Trigger Alert
+Det_Flood ..> Resp_Notif : Trigger Alert
+Det_Gateway ..> Resp_Notif : Trigger Alert
+Resp_Notif --> Ext_OS : Dispatch Desktop Notification
+
+UI_Auth <--> DB_Users
+UI_Users <--> DB_Users
+UI_Config <--> DB_Config
+UI_Dash <--> DB_Sessions
+UI_Dash <--> DB_Alerts
+UI_Alerts <--> DB_Alerts
+UI_Evidence <--> DB_Evidence
+UI_NetCtx <--> DB_Devices
+UI_Packets <--> DB_Packets
+UI_Session <--> DB_Sessions
+UI_Reports <--> DB_Sessions
+UI_Reports <--> DB_Evidence
+
+@enduml

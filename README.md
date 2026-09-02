@@ -139,3 +139,12 @@ into the repo.
 - **Seal Mode never fires automatically** — it always requires explicit
   user confirmation, by design, since blocking a host is a disruptive
   action a user should consciously choose.
+
+## System Architecture & Specifications
+
+For the comprehensive system architecture diagram, component specifications, and use case interactions (covering both End User and Evaluator / Administrator roles), see:
+- [System Flow & Evaluation Guide](FLOWCHART.md) — Comprehensive flowchart, use case mappings, and assessment reference.
+- [System Architecture Specification](docs/system_architecture.md)
+- [PlantUML Architecture Diagram](docs/system_architecture.puml)
+
+
