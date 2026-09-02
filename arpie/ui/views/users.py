@@ -22,23 +22,48 @@ def _set_user_filter(app, label: str):
     app.page.update()
 
 
-def _make_stat_card(icon, label: str, value: str, color: str, bg: str) -> ft.Container:
+def _make_stat_card(icon, label: str, value: str, color: str, bg: str, tooltip_text: str = "") -> ft.Container:
     return ft.Container(
         content=ft.Row([
             ft.Container(
                 content=ft.Icon(icon, color=color, size=20),
-                bgcolor=bg, border_radius=10, padding=10,
+                bgcolor=bg,
+                border_radius=10,
+                padding=10,
             ),
             ft.Column([
-                ft.Text(label, size=11, weight=ft.FontWeight.W_500, color="#64748B"),
+                ft.Row([
+                    ft.Text(label, size=11, weight=ft.FontWeight.W_500, color="#64748B"),
+                    ft.Icon(ft.Icons.INFO_OUTLINE_ROUNDED, size=12, color="#94A3B8") if tooltip_text else ft.Container(),
+                ], spacing=4),
                 ft.Text(value, size=18, weight=ft.FontWeight.BOLD, color="#0F172A"),
             ], spacing=2),
         ], spacing=12),
-        bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=16, expand=1,
+        bgcolor="#FFFFFF",
+        border=ft.Border.all(1, "#E2E8F0"),
+        border_radius=12,
+        padding=16,
+        expand=1,
+        tooltip=tooltip_text if tooltip_text else None,
     )
 
 
 def render_users_view(app) -> ft.Column:
+    if app.user_role != "Evaluator/Administrator":
+        return ft.Column([
+            ft.Container(
+                content=ft.Column([
+                    ft.Icon(ft.Icons.LOCK_ROUNDED, color="#DC2626", size=48),
+                    ft.Text("Administrator Privileges Required", size=18, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                    ft.Text("User management and RBAC directory access is restricted to Evaluator / Administrator accounts.", size=13, color="#64748B", text_align=ft.TextAlign.CENTER),
+                    ft.Container(height=8),
+                    ft.ElevatedButton("Return to Dashboard", icon=ft.Icons.DASHBOARD_ROUNDED, on_click=lambda e: app.nav_to("dashboard"), style=ft.ButtonStyle(bgcolor="#0F172A", color="#FFFFFF", padding=12)),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
+                bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=40,
+                alignment=ft.Alignment(0, 0),
+            )
+        ], alignment=ft.MainAxisAlignment.CENTER)
+
     if not hasattr(app, "active_user_role_filter"):
         app.active_user_role_filter = "All"
     if not hasattr(app, "user_search_query"):
@@ -60,10 +85,50 @@ def render_users_view(app) -> ft.Column:
     evaluator_count = sum(1 for o in operators_list if "Evaluator" in str(o.get("role", "")))
     end_user_count = total_count - evaluator_count
 
+    eval_tooltip = (
+        "Evaluator / Administrator Privileges:\n"
+        "• ✓ Full Promiscuous Packet Sniffing & Live Capture\n"
+        "• ✓ Heuristic Rule Sensitivity & Detection Threshold Tuning\n"
+        "• ✓ Threat Intelligence API Integrations (AbuseIPDB)\n"
+        "• ✓ 1-Click Seal Mode: Host Isolation & Active Blocking\n"
+        "• ✓ Automated Forensic Report Generation (HTML, PDF, JSON)\n"
+        "• ✓ Operator Accounts & RBAC Access Management"
+    )
+
+    user_tooltip = (
+        "End User Privileges:\n"
+        "• ✓ Real-Time Threat Alerts & Health Status Dashboard\n"
+        "• ✓ Network Device Discovery & Gateway MAC Posture\n"
+        "• ✓ Context-Aware Automatic Heuristic Calibration\n"
+        "• ✓ Deterministic Heuristic Evidence & Proof Inspection\n"
+        "• ✗ Restricted from modifying detection rules or API keys"
+    )
+
     stats_row = ft.Row([
-        _make_stat_card(ft.Icons.GROUP_ROUNDED, "Total Users", str(total_count), "#0F172A", "#F1F5F9"),
-        _make_stat_card(ft.Icons.ADMIN_PANEL_SETTINGS_ROUNDED, "Evaluator / Admins", str(evaluator_count), "#8B5CF6", "#F5F3FF"),
-        _make_stat_card(ft.Icons.PERSON_ROUNDED, "End Users", str(end_user_count), "#10B981", "#ECFDF5"),
+        _make_stat_card(
+            ft.Icons.GROUP_ROUNDED,
+            "Total System Users",
+            str(total_count),
+            "#0F172A",
+            "#F1F5F9",
+            "System Operator Directory:\n• Total active operators registered in SQLite database\n• Access control enforced via Arpie RBAC engine",
+        ),
+        _make_stat_card(
+            ft.Icons.ADMIN_PANEL_SETTINGS_ROUNDED,
+            "Evaluator / Admins",
+            str(evaluator_count),
+            "#8B5CF6",
+            "#F5F3FF",
+            eval_tooltip,
+        ),
+        _make_stat_card(
+            ft.Icons.PERSON_ROUNDED,
+            "End Users",
+            str(end_user_count),
+            "#10B981",
+            "#ECFDF5",
+            user_tooltip,
+        ),
     ], spacing=14)
 
     filter_row = ft.Row([
@@ -78,7 +143,7 @@ def render_users_view(app) -> ft.Column:
         app.page.update()
 
     search_input = ft.TextField(
-        hint_text="Search user accounts by username, email or display name...",
+        hint_text="Search user accounts by username, email, role or display name...",
         prefix_icon=ft.Icons.SEARCH_ROUNDED,
         dense=True,
         border_radius=8,
@@ -104,32 +169,76 @@ def render_users_view(app) -> ft.Column:
         ):
             continue
 
+        is_eval = ("Evaluator" in role_label)
+        initials = (disp[:2] if len(disp) >= 2 else (uname[:2] if len(uname) >= 2 else "OP")).upper()
+        avatar_bg = "#8B5CF6" if is_eval else "#10B981"
+
         created_ts = float(op.get("created_at") or time.time())
-        created_str = datetime.datetime.fromtimestamp(created_ts).strftime("%Y-%m-%d %H:%M")
-        
+        created_str = datetime.datetime.fromtimestamp(created_ts).strftime("%Y-%m-%d")
+
         last_login_raw = op.get("last_login_at")
         if last_login_raw:
-            last_str = datetime.datetime.fromtimestamp(float(last_login_raw)).strftime("%Y-%m-%d %H:%M")
+            last_dt = datetime.datetime.fromtimestamp(float(last_login_raw))
+            last_date_str = last_dt.strftime("%Y-%m-%d")
+            last_time_str = last_dt.strftime("%H:%M:%S")
         else:
-            last_str = "Active Session"
+            last_date_str = "Active"
+            last_time_str = "Session"
 
         user_rows.append(
             ft.DataRow(cells=[
-                ft.DataCell(ft.Text(str(op.get("id")), size=12, color="#64748B")),
-                ft.DataCell(ft.Text(disp, size=12, weight=ft.FontWeight.BOLD, color="#0F172A")),
+                ft.DataCell(ft.Text(f"#{op.get('id')}", size=12, weight=ft.FontWeight.BOLD, color="#64748B")),
+                ft.DataCell(
+                    ft.Row([
+                        ft.Container(
+                            content=ft.Text(initials, size=11, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
+                            bgcolor=avatar_bg,
+                            width=30, height=30,
+                            border_radius=15,
+                            alignment=ft.Alignment(0, 0),
+                        ),
+                        ft.Column([
+                            ft.Text(disp, size=12, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                            ft.Text(f"@{uname}", size=10, color="#64748B"),
+                        ], spacing=1, alignment=ft.MainAxisAlignment.CENTER),
+                    ], spacing=10)
+                ),
                 ft.DataCell(ft.Text(uname, size=12, color="#0F172A")),
-                ft.DataCell(ft.Text(email, size=12, color="#475569")),
-                ft.DataCell(ft.Container(
-                    content=ft.Text(role_label, size=10, weight=ft.FontWeight.BOLD, color="#8B5CF6" if "Evaluator" in role_label else "#10B981"),
-                    bgcolor="#F5F3FF" if "Evaluator" in role_label else "#ECFDF5",
-                    border_radius=4, padding=ft.Padding.symmetric(horizontal=8, vertical=3),
-                )),
-                ft.DataCell(ft.Container(
-                    content=ft.Text("Active", size=10, weight=ft.FontWeight.BOLD, color="#10B981"),
-                    bgcolor="#ECFDF5",
-                    border_radius=4, padding=ft.Padding.symmetric(horizontal=8, vertical=3),
-                )),
-                ft.DataCell(ft.Text(last_str, size=12, color="#64748B")),
+                ft.DataCell(
+                    ft.Row([
+                        ft.Icon(ft.Icons.ALTERNATE_EMAIL_ROUNDED, size=13, color="#94A3B8"),
+                        ft.Text(email, size=12, color="#475569"),
+                    ], spacing=4)
+                ),
+                ft.DataCell(
+                    ft.Container(
+                        content=ft.Row([
+                            ft.Icon(ft.Icons.SECURITY_ROUNDED if is_eval else ft.Icons.PERSON_ROUNDED, size=12, color="#8B5CF6" if is_eval else "#10B981"),
+                            ft.Text(role_label, size=10, weight=ft.FontWeight.BOLD, color="#8B5CF6" if is_eval else "#10B981"),
+                        ], spacing=4),
+                        bgcolor="#F5F3FF" if is_eval else "#ECFDF5",
+                        border=ft.Border.all(1, "#DDD6FE" if is_eval else "#A7F3D0"),
+                        border_radius=6,
+                        padding=ft.Padding.symmetric(horizontal=8, vertical=4),
+                    )
+                ),
+                ft.DataCell(
+                    ft.Container(
+                        content=ft.Row([
+                            ft.Container(width=6, height=6, border_radius=3, bgcolor="#10B981"),
+                            ft.Text("Active", size=10, weight=ft.FontWeight.BOLD, color="#065F46"),
+                        ], spacing=5),
+                        bgcolor="#D1FAE5",
+                        border_radius=6,
+                        padding=ft.Padding.symmetric(horizontal=8, vertical=4),
+                    )
+                ),
+                ft.DataCell(
+                    ft.Column([
+                        ft.Text(last_time_str, size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
+                        ft.Text(last_date_str, size=10, color="#94A3B8"),
+                    ], spacing=1, alignment=ft.MainAxisAlignment.CENTER)
+                ),
             ])
         )
 
@@ -145,9 +254,9 @@ def render_users_view(app) -> ft.Column:
         ],
         rows=user_rows,
         heading_row_height=42,
-        data_row_min_height=48,
-        data_row_max_height=52,
-        column_spacing=52,
+        data_row_min_height=52,
+        data_row_max_height=56,
+        column_spacing=46,
         horizontal_lines=ft.BorderSide(1, "#F1F5F9"),
         show_checkbox_column=False,
     )
@@ -157,18 +266,27 @@ def render_users_view(app) -> ft.Column:
             ft.Row([
                 ft.Row([
                     ft.Icon(ft.Icons.GROUP_ROUNDED, color="#0F172A", size=20),
-                    ft.Text("User Account Information", size=15, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                    ft.Column([
+                        ft.Text("User Account Information", size=15, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                        ft.Text("Registered system operators and RBAC role assignments", size=11, color="#64748B"),
+                    ], spacing=1),
                 ], spacing=8),
-                ft.Text(f"{len(user_rows)} Operators Registered", size=12, color="#64748B"),
+                ft.Container(
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.LOCK_PERSON_ROUNDED, size=13, color="#8B5CF6"),
+                        ft.Text(f"{len(user_rows)} Operators Managed", size=11, weight=ft.FontWeight.BOLD, color="#8B5CF6"),
+                    ], spacing=4),
+                    bgcolor="#F5F3FF", border_radius=6, padding=ft.Padding.symmetric(horizontal=8, vertical=4),
+                ),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Divider(color="#E2E8F0", height=12),
             ft.Row([user_table], scroll=ft.ScrollMode.AUTO),
             ft.Divider(color="#F1F5F9", height=10),
             ft.Row([
-                ft.Text(f"Showing {len(user_rows)} user accounts in database", size=12, color="#94A3B8"),
+                ft.Text(f"Showing {len(user_rows)} user accounts in SQLite database", size=12, color="#94A3B8"),
                 ft.Row([
-                    ft.Icon(ft.Icons.SECURITY_ROUNDED, size=14, color="#94A3B8"),
-                    ft.Text("Role privileges enforced via Arpie RBAC engine", size=12, color="#94A3B8"),
+                    ft.Icon(ft.Icons.VERIFIED_USER_ROUNDED, size=14, color="#10B981"),
+                    ft.Text("Role privileges verified via Arpie RBAC engine", size=12, color="#64748B"),
                 ], spacing=4),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
         ]),
@@ -182,7 +300,7 @@ def render_users_view(app) -> ft.Column:
             ft.Container(
                 content=ft.Row([
                     ft.Icon(ft.Icons.BADGE_ROUNDED, color="#0F172A", size=14),
-                    ft.Text(f"{total_count} Accounts", size=12, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                    ft.Text(f"{total_count} Accounts Registered", size=12, weight=ft.FontWeight.BOLD, color="#0F172A"),
                 ], spacing=4),
                 bgcolor="#F1F5F9", border_radius=6, padding=ft.Padding.symmetric(horizontal=8, vertical=4),
             )

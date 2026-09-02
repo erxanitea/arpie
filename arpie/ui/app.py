@@ -96,11 +96,11 @@ class ArpieApp:
         ]
 
         self.devices_inventory = [
-            {"id": "1", "hostname": "PC-01", "ip": "192.168.1.10", "mac": "00:0C:29:4F:11:AA", "vendor": "VMware, Inc.", "type": "PC", "status": "Trusted", "last_seen": "2026-08-31 16:10"},
-            {"id": "2", "hostname": "Laptop-Work", "ip": "192.168.1.15", "mac": "00:1E:50:32:BB:CC", "vendor": "Dell Inc.", "type": "Laptop", "status": "Trusted", "last_seen": "2026-08-31 16:15"},
-            {"id": "3", "hostname": "Printer-01", "ip": "192.168.1.20", "mac": "00:1B:44:12:34:7F", "vendor": "HP Inc.", "type": "Printer", "status": "Trusted", "last_seen": "2026-08-31 15:40"},
-            {"id": "4", "hostname": "Router-01", "ip": "192.168.1.1", "mac": "00:50:56:C0:00:01", "vendor": "Cisco Systems", "type": "Router", "status": "Trusted", "last_seen": "2026-08-31 16:20"},
-            {"id": "5", "hostname": "Unknown-Device", "ip": "192.168.1.50", "mac": "3C:97:0E:12:34:56", "vendor": "Unknown", "type": "PC", "status": "Untrusted", "last_seen": "2026-08-31 16:22"},
+            {"id": "1", "hostname": "Gateway-Router (AP)", "ip": "192.168.1.1", "mac": "00:50:56:C0:00:01", "vendor": "Cisco / Fiberhome", "type": "Gateway / Router", "status": "Active Gateway", "last_seen": "2026-09-01 00:20"},
+            {"id": "2", "hostname": "This-Endpoint (Local Host)", "ip": "192.168.1.100", "mac": "00:0C:29:4F:11:AA", "vendor": "Intel Corp.", "type": "Endpoint / Host", "status": "Local Endpoint", "last_seen": "2026-09-01 00:25"},
+            {"id": "3", "hostname": "Laptop-Work", "ip": "192.168.1.15", "mac": "00:1E:50:32:BB:CC", "vendor": "Dell Inc.", "type": "Laptop", "status": "Known Host", "last_seen": "2026-09-01 00:15"},
+            {"id": "4", "hostname": "Office-Printer", "ip": "192.168.1.20", "mac": "00:1B:44:12:34:7F", "vendor": "HP Inc.", "type": "Printer / IoT", "status": "Known Host", "last_seen": "2026-09-01 00:10"},
+            {"id": "5", "hostname": "Suspect-Node", "ip": "192.168.1.50", "mac": "3C:97:0E:12:34:56", "vendor": "Unknown (Attacker)", "type": "Workstation", "status": "Untrusted / Suspect", "last_seen": "2026-09-01 00:22"},
         ]
 
 
@@ -189,7 +189,7 @@ class ArpieApp:
         title_map = {
             "dashboard": ("Dashboard", "Real-time overview of your network and security status"),
             "alerts": ("Alerts", "All detected security events for this monitoring session"),
-            "inventory": ("Network Device Inventory", "Discovered hosts, MAC-IP bindings, and trust posture"),
+            "inventory": ("Network", "Network context assessment and discovered device inventory"),
             "packets": ("Packet Capture Logs", "Live inspection and recorded packet stream replay"),
             "seal": ("Seal Mode Mitigation", "Reversible endpoint threat response and network isolation"),
             "reports": ("Forensic Reports", "Automated incident reports, threat summaries, and exports"),

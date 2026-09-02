@@ -3,6 +3,7 @@ from ..theme import LOGO_PATH
 
 
 def build_sidebar(app) -> ft.Container:
+    is_evaluator = (app.user_role == "Evaluator/Administrator")
     nav_items = [
         ("dashboard", "Dashboard", ft.Icons.DASHBOARD_OUTLINED, ft.Icons.DASHBOARD_ROUNDED, None),
         ("alerts", "Alerts", ft.Icons.NOTIFICATIONS_OUTLINED, ft.Icons.NOTIFICATIONS_ROUNDED, str(len(app.all_alerts_list))),
@@ -10,9 +11,10 @@ def build_sidebar(app) -> ft.Container:
         ("packets", "Packet Logs", ft.Icons.ARTICLE_OUTLINED, ft.Icons.ARTICLE_ROUNDED, None),
         ("seal", "Seal Mode", ft.Icons.SECURITY_OUTLINED, ft.Icons.SECURITY_ROUNDED, str(len(app.active_blocks))),
         ("reports", "Reports", ft.Icons.INSERT_CHART_OUTLINED, ft.Icons.INSERT_CHART_ROUNDED, None),
-        ("users", "Users", ft.Icons.PEOPLE_OUTLINED, ft.Icons.PEOPLE_ROUNDED, None),
-        ("settings", "Settings", ft.Icons.SETTINGS_OUTLINED, ft.Icons.SETTINGS_ROUNDED, None),
     ]
+    if is_evaluator:
+        nav_items.append(("users", "Users", ft.Icons.PEOPLE_OUTLINED, ft.Icons.PEOPLE_ROUNDED, None))
+    nav_items.append(("settings", "Settings", ft.Icons.SETTINGS_OUTLINED, ft.Icons.SETTINGS_ROUNDED, None))
 
     app.sidebar_btn_refs = []
     nav_controls: list[ft.Control] = []

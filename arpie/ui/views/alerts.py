@@ -87,17 +87,17 @@ def render_alerts_view(app) -> ft.Column:
                     ),
                     ft.DataCell(ft.Container(
                         content=ft.Text(sev, size=10, weight=ft.FontWeight.BOLD, color=fgc),
-                        bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(8, 3),
+                        bgcolor=bgc, border_radius=4, padding=ft.Padding.symmetric(horizontal=8, vertical=3),
                     )),
                     ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_600, color="#0F172A")),
                     ft.DataCell(ft.Text(target, size=12, color="#475569")),
                     ft.DataCell(ft.Container(
                         content=ft.Text("100%", size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
-                        bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(6, 2),
+                        bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
                     ft.DataCell(ft.Container(
                         content=ft.Text(status, size=10, weight=ft.FontWeight.BOLD, color="#64748B"),
-                        bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(6, 2),
+                        bgcolor="#F1F5F9", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
                     ft.DataCell(
                         ft.IconButton(
@@ -202,7 +202,7 @@ def render_alerts_view(app) -> ft.Column:
                             ft.Text(sel_type, size=13, weight=ft.FontWeight.BOLD, color="#0F172A"),
                             ft.Container(
                                 content=ft.Text(sel_sev, size=9, weight=ft.FontWeight.BOLD, color=sel_fg),
-                                bgcolor=sel_bg, border_radius=4, padding=ft.Padding.symmetric(6, 2),
+                                bgcolor=sel_bg, border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Text(f"Detected on {sel_date} at {sel_time}", size=11, color="#64748B"),
@@ -248,7 +248,7 @@ def render_alerts_view(app) -> ft.Column:
                             ft.Text("Abuse Confidence Score:", size=11, color="#64748B"),
                             ft.Container(
                                 content=ft.Text("98% Malicious" if "192.168.1.50" in sel_src or "192.168.1.1" in sel_src else "Clean (0%)", size=10, weight=ft.FontWeight.BOLD, color="#DC2626"),
-                                bgcolor="#FEE2E2", border_radius=4, padding=ft.Padding.symmetric(6, 2),
+                                bgcolor="#FEE2E2", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([

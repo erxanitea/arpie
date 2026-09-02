@@ -11,6 +11,16 @@ def render_register_screen(app) -> ft.Container:
     error_msg = ft.Text("", size=11, color="#DC2626", visible=False, weight=ft.FontWeight.W_600)
     success_msg = ft.Text("", size=11, color="#10B981", visible=False, weight=ft.FontWeight.W_600)
 
+    fullname_field = ft.TextField(
+        hint_text="Enter full name (e.g. Jane Doe)",
+        prefix_icon=ft.Icons.BADGE_OUTLINED,
+        dense=True,
+        border_radius=10,
+        bgcolor="#F8FAFC",
+        border_color="#E2E8F0",
+        focused_border_color="#DC2626",
+        text_size=13,
+    )
     username_field = ft.TextField(
         hint_text="Choose a username",
         prefix_icon=ft.Icons.PERSON_OUTLINE_ROUNDED,
@@ -60,11 +70,17 @@ def render_register_screen(app) -> ft.Container:
         error_msg.visible = False
         success_msg.visible = False
 
+        fname = (fullname_field.value or "").strip()
         uname = (username_field.value or "").strip()
         email = (email_field.value or "").strip()
         pw = password_field.value or ""
         cpw = confirm_pw_field.value or ""
 
+        if not fname:
+            error_msg.value = "Full Name is required."
+            error_msg.visible = True
+            app.page.update()
+            return
         if not uname:
             error_msg.value = "Username is required."
             error_msg.visible = True
@@ -105,10 +121,10 @@ def render_register_screen(app) -> ft.Container:
 
         target_role = "Evaluator/Administrator" if is_initial_setup else "End User"
         try:
-            op_id = app.db.create_operator(uname, email, pw, display_name=uname, role=target_role)
+            op_id = app.db.create_operator(uname, email, pw, display_name=fname, role=target_role)
             if is_initial_setup:
                 app.operator_id = op_id
-                app.user_name = uname
+                app.user_name = fname
                 app.user_role = target_role
                 app.operator_username = uname
                 app.operator_email = email
@@ -185,6 +201,10 @@ def render_register_screen(app) -> ft.Container:
         error_msg,
         success_msg,
         ft.Container(height=2),
+        ft.Column([
+            ft.Text("Full Name", size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
+            fullname_field,
+        ], spacing=3, tight=True),
         ft.Column([
             ft.Text("Username", size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
             username_field,
