@@ -110,8 +110,16 @@ class Database:
         return conn
 
     def _init_schema(self):
-        with self._connect() as conn:
+        # NOTE: a sqlite3 connection's context manager commits but does NOT
+        # close, so `with self._connect()` would leak an open handle on every
+        # Database() — harmless on Linux but locks the file on Windows. Close
+        # it explicitly.
+        conn = self._connect()
+        try:
             conn.executescript(SCHEMA)
+            conn.commit()
+        finally:
+            conn.close()
 
     @contextmanager
     def cursor(self):
