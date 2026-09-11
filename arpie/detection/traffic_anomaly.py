@@ -22,8 +22,12 @@ class TrafficRateRule:
         self._already_alerted: dict[str, float] = {}
 
     def _is_relevant(self, packet) -> bool:
-        if packet.haslayer(TCP) and packet[TCP].flags & 0x02:  # SYN flag
-            return True
+        if packet.haslayer(TCP):
+            flags = int(packet[TCP].flags)
+            # Count connection-INITIATING SYNs only: SYN set and ACK clear.
+            # SYN-ACK (0x12) is a server answering our own legitimate
+            # connections, so excluding it avoids flagging normal browsing.
+            return bool((flags & 0x02) and not (flags & 0x10))
         if packet.haslayer(UDP):
             return True
         if packet.haslayer(ICMP):

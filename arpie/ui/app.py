@@ -195,7 +195,22 @@ class ArpieApp:
             d.gateway_window_seconds = int(float(self.thresholds.get("gw_window", "10")) * 60)
         except (TypeError, ValueError):
             pass
+
+        # Context-aware sensitivity: on a trusted/home network, high UDP (video
+        # calls, streaming, game traffic) and broad short-lived port activity are
+        # normal, so relax the flood/scan rules to cut false positives. Public /
+        # untrusted networks keep the sensitive defaults. ARP/gateway identity
+        # rules are NOT relaxed — L2 spoofing is never expected anywhere.
+        if self._is_trusted_context():
+            d.traffic_rate_pps_threshold = max(d.traffic_rate_pps_threshold, d.traffic_rate_pps_threshold * 4)
+            d.port_scan_unique_ports = max(d.port_scan_unique_ports, d.port_scan_unique_ports * 2)
         return d
+
+    def _is_trusted_context(self) -> bool:
+        cls = getattr(self.network_context, "classification", None) if self.network_context else None
+        if cls:
+            return cls == "trusted"
+        return "trust" in (self.selected_profile or "").lower()
 
     def build_engine(self, gateway_ip: Optional[str] = None) -> DetectionEngine:
         """Construct a DetectionEngine from the current live thresholds and

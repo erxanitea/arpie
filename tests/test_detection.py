@@ -113,6 +113,15 @@ class TestTrafficRateRule:
             result = rule.inspect(make_tcp("10.0.0.9", "10.0.0.1", 80, flags="A"))
         assert result is None
 
+    def test_syn_ack_replies_not_counted(self, fast_thresholds):
+        # SYN-ACK is a server answering our own outbound connections, not a
+        # flood — a burst of them must not raise an alert.
+        rule = TrafficRateRule(fast_thresholds)
+        result = None
+        for _ in range(20):
+            result = rule.inspect(make_tcp("10.0.0.9", "10.0.0.1", 443, flags="SA"))
+        assert result is None
+
 
 class TestGatewayChangeRule:
     def test_no_alert_on_first_sighting(self, fast_thresholds):
