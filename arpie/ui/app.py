@@ -819,8 +819,9 @@ class ArpieApp:
             self.session_id = sid
 
         if sid is not None:
+            import os
             data = build_report_data(self.db, sid)
-            out_path = f"arpie_session_{sid}.{fmt}"
+            out_path = os.path.join(CONFIG.reports_dir, f"arpie_session_{sid}.{fmt}")
             if fmt == "json":
                 export_json(data, out_path)
             elif fmt == "html":
