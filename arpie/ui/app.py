@@ -1,4 +1,5 @@
 import datetime
+import json
 import threading
 import time
 from collections import deque
@@ -211,6 +212,50 @@ class ArpieApp:
         if cls:
             return cls == "trusted"
         return "trust" in (self.selected_profile or "").lower()
+
+    # ---- network classification (Objective 1) ----
+    def get_trusted_ssids(self) -> list[str]:
+        """User-confirmed trusted SSIDs, persisted in SQLite so a network the
+        user marks trusted is remembered across sessions."""
+        try:
+            val = json.loads(self.db.get_config("network.trusted_ssids", "[]"))
+            return [s for s in val if isinstance(s, str)]
+        except Exception:
+            return []
+
+    def add_trusted_ssid(self, ssid: Optional[str]):
+        if not ssid:
+            return
+        ssids = self.get_trusted_ssids()
+        if ssid not in ssids:
+            ssids.append(ssid)
+            self.db.set_config("network.trusted_ssids", json.dumps(ssids))
+
+    def remove_trusted_ssid(self, ssid: str):
+        ssids = [s for s in self.get_trusted_ssids() if s != ssid]
+        self.db.set_config("network.trusted_ssids", json.dumps(ssids))
+
+    def refresh_network_context(self):
+        """Detect context using the persisted trusted-SSID list so a remembered
+        home/office network auto-classifies as trusted."""
+        self.network_context = detect_network_context(self.get_trusted_ssids())
+        self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(self.network_context.interface)
+        return self.network_context
+
+    def apply_classification(self, radio_value: str, remember: bool = False):
+        """Honor the user's manual trusted/public/unknown choice on the context
+        screen, and optionally remember this SSID as trusted for next time."""
+        mapping = {"public": "public-untrusted", "trusted": "trusted", "unknown": "unknown"}
+        classification = mapping.get(radio_value, "public-untrusted")
+        if self.network_context is None:
+            self.refresh_network_context()
+        self.network_context.classification = classification
+        ssid = getattr(self.network_context, "ssid", None)
+        if classification == "trusted" and remember and ssid:
+            self.add_trusted_ssid(ssid)
+        elif classification != "trusted" and ssid:
+            # An explicit non-trusted choice overrides a previously remembered SSID.
+            self.remove_trusted_ssid(ssid)
 
     def build_engine(self, gateway_ip: Optional[str] = None) -> DetectionEngine:
         """Construct a DetectionEngine from the current live thresholds and
@@ -688,9 +733,13 @@ class ArpieApp:
         self.monitoring_start_time = time.time()
         self.timer_running = True
 
-        ctx = detect_network_context()
-        self.network_context = ctx
-        self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(ctx.interface)
+        # Preserve any manual classification the user set on the context screen;
+        # only auto-detect (with the trusted-SSID list) if none was chosen.
+        if self.network_context is None:
+            self.refresh_network_context()
+        ctx = self.network_context
+        if not self.local_ip:
+            self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(ctx.interface)
         self.session_id = self.db.start_session(ctx.ssid, ctx.classification, ctx.interface, source="live", operator_id=self.operator_id)
         self.engine = self.build_engine(gateway_ip=ctx.gateway_ip)
         self.seal_mgr = SealManager(self.db, self.session_id, CONFIG.seal.auto_restore_seconds)
@@ -729,7 +778,7 @@ class ArpieApp:
             if not self.monitoring_start_time:
                 self.monitoring_start_time = time.time()
             if not self.live_capture:
-                ctx = self.network_context or detect_network_context()
+                ctx = self.network_context or self.refresh_network_context()
                 self.live_capture = LiveCapture(interface=ctx.interface or "wlan0", on_packet=self._process_packet)
                 self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
                 self.capture_thread.start()
@@ -813,12 +862,10 @@ class ArpieApp:
 
 
     def run_pcap_replay(self, pcap_path: str):
-        ctx = detect_network_context()
-        self.network_context = ctx
+        ctx = self.network_context or self.refresh_network_context()
         self.session_id = self.db.start_session(ctx.ssid, ctx.classification, ctx.interface, source=pcap_path, operator_id=self.operator_id)
         self.engine = self.build_engine(gateway_ip=ctx.gateway_ip)
 
-        self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(ctx.interface)
         replay = PcapReplay(pcap_path, self._process_packet)
         threading.Thread(target=replay.run, daemon=True).start()
         self.status_toast = f"Replaying PCAP: {pcap_path}"
@@ -829,7 +876,7 @@ class ArpieApp:
     def export_report(self, fmt: str, target_session_id: Optional[int] = None):
         sid = target_session_id or self.session_id
         if not sid:
-            ctx = detect_network_context()
+            ctx = self.network_context or self.refresh_network_context()
             sid = self.db.start_session(ctx.ssid, ctx.classification, ctx.interface, source="export", operator_id=self.operator_id)
             self.session_id = sid
 
