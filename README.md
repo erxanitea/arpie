@@ -118,29 +118,13 @@ pytest tests/ -v
 All four detection rules are covered with synthetic Scapy packets, so
 the suite runs anywhere (no live interface or admin rights needed).
 
-## Building the standalone `.exe`
+## Building a downloadable binary
 
-PyInstaller is already in `requirements.txt`. From the project root, on
-a **Windows machine** (build the `.exe` on the OS you're targeting):
-
-```bash
-pyinstaller --name Arpie --onefile --windowed ^
-  --add-data "arpie;arpie" ^
-  main.py
-```
-
-- `--onefile` bundles everything into a single `Arpie.exe` in `dist/`
-- `--windowed` suppresses the console window for the GUI (drop this flag if you want console output for debugging)
-- On Linux/macOS, use `--add-data "arpie:arpie"` (colon instead of semicolon) to build platform-native equivalents
-
-The finished executable will be at `dist/Arpie.exe`. Since Scapy needs
-packet-capture drivers, make sure **Npcap** (https://npcap.com/) is
-installed on the target Windows machine — it's a runtime dependency of
-Scapy on Windows, not something PyInstaller can bundle.
-
-For a GitHub Release, zip `dist/Arpie.exe` alongside a short `README`
-and attach it to a tagged release rather than committing the binary
-into the repo.
+The GUI is a Flet app; the modern Flet build path (`flet build <os>`), the
+headless-CLI PyInstaller path, and the runtime prerequisites (elevation, Npcap
+on Windows, code signing, privacy) are all documented in
+**[docs/PACKAGING.md](docs/PACKAGING.md)**. Prefer attaching built binaries to a
+tagged GitHub Release over committing them to the repo.
 
 ## Notes on design choices
 
@@ -163,3 +147,8 @@ For the comprehensive system architecture diagram, component specifications, and
 - [PlantUML Architecture Diagram](docs/system_architecture.puml)
 
 
+
+## License
+
+[MIT](LICENSE). The bundled attack simulator is for authorized testing of
+networks you own or are permitted to test.

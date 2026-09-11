@@ -1,6 +1,8 @@
 scapy>=2.5.0
 psutil>=5.9.0
-flet>=0.24.0
+# The UI targets the modern Flet API (page.show_dialog, ft.Padding.symmetric,
+# ft.Icons/ft.Colors). Pin to a compatible line — older Flet will not run it.
+flet>=0.80,<1.0
 requests>=2.31.0
 reportlab>=4.0.0
 pytest>=7.4.0

@@ -1,0 +1,73 @@
+# Builds desktop bundles on a version tag and attaches them to a GitHub Release.
+#
+# VERIFY ON FIRST TAG: `flet build` requires the Flutter SDK + each platform's
+# native toolchain, and the exact data-bundling flags vary between Flet
+# versions. Run this once against your pinned Flet and adjust the build step if
+# the produced bundle is missing assets or the Flet client. See docs/PACKAGING.md.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows
+          - os: macos-latest
+            target: macos
+          - os: ubuntu-latest
+            target: linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Set up Flutter (required by `flet build`)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Linux build deps
+        if: matrix.target == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build desktop bundle
+        run: flet build ${{ matrix.target }} --project Arpie --include-packages flet_desktop
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          cd build/${{ matrix.target }}
+          if [ "${{ matrix.target }}" = "windows" ]; then
+            7z a ../../arpie-${{ matrix.target }}.zip ./*
+          else
+            tar -czf ../../arpie-${{ matrix.target }}.tar.gz ./*
+          fi
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            arpie-${{ matrix.target }}.zip
+            arpie-${{ matrix.target }}.tar.gz
+          fail_on_unmatched_files: false
