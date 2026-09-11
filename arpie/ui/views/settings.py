@@ -131,11 +131,27 @@ def render_settings_view(app) -> ft.Column:
     cards: list[ft.Control] = [operator_card]
 
     if is_evaluator:
-        abuse_field = ft.TextField(label="AbuseIPDB API Key", password=True, can_reveal_password=True, value="••••••••••••••••••••••••", border_radius=8, dense=True)
-        ipinfo_field = ft.TextField(label="IPInfo Token", password=True, can_reveal_password=True, value="••••••••••••••••••••••••", border_radius=8, dense=True)
+        has_abuse = bool(app.db.get_config("intel.abuseipdb_key", ""))
+        has_ipinfo = bool(app.db.get_config("intel.ipinfo_key", ""))
+        abuse_field = ft.TextField(
+            label="AbuseIPDB API Key", password=True, can_reveal_password=True,
+            hint_text="Configured — leave blank to keep" if has_abuse else "Paste key to enable reputation lookups",
+            border_radius=8, dense=True)
+        ipinfo_field = ft.TextField(
+            label="IPInfo Token", password=True, can_reveal_password=True,
+            hint_text="Configured — leave blank to keep" if has_ipinfo else "Paste token to enable ASN/geo lookups",
+            border_radius=8, dense=True)
 
         def save_conf(e):
-            app.status_toast = "Detection configuration successfully saved to database."
+            # Persist to SQLite AND rebuild the running DetectionEngine so the
+            # new thresholds take effect for the current session immediately.
+            app.status_toast = app.save_detection_settings(
+                dict(app.thresholds),
+                abuse_key=(abuse_field.value or "").strip(),
+                ipinfo_key=(ipinfo_field.value or "").strip(),
+            )
+            abuse_field.value = ""
+            ipinfo_field.value = ""
             app.update_view_content()
             app.page.update()
 

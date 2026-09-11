@@ -58,6 +58,8 @@ def render_alerts_view(app) -> ft.Column:
         fgc = alert_item.get("fg", "#DC2626")
         bgc = alert_item.get("bg", "#FEE2E2")
         ev_desc = alert_item.get("desc", "")
+        conf = alert_item.get("confidence")
+        conf_str = f"{int(conf * 100)}%" if isinstance(conf, (int, float)) else "—"
 
         if app.active_severity_filter != "All" and sev.lower() != app.active_severity_filter.lower():
             continue
@@ -92,7 +94,7 @@ def render_alerts_view(app) -> ft.Column:
                     ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_600, color="#0F172A")),
                     ft.DataCell(ft.Text(target, size=12, color="#475569")),
                     ft.DataCell(ft.Container(
-                        content=ft.Text("100%", size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
+                        content=ft.Text(conf_str, size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
                         bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
                     ft.DataCell(ft.Container(
@@ -171,15 +173,13 @@ def render_alerts_view(app) -> ft.Column:
         sel_date = sel.get("date", today_date)
 
         def quick_seal(e, ip=sel_src):
-            app.active_blocks.append({
-                "ip": ip,
-                "type": sel_type,
-                "time": sel_time,
-                "status": "Isolated (Active Block)",
-            })
-            app.status_toast = f"Host {ip} isolated via 1-Click Seal Mode."
-            app.update_view_content()
-            app.page.update()
+            app.block_ip(ip, None)
+
+        sel_conf = sel.get("confidence")
+        sel_conf_str = f"{int(sel_conf * 100)}% confidence" if isinstance(sel_conf, (int, float)) else "Deterministic"
+        sel_abuse = sel.get("abuse_score")
+        sel_asn = sel.get("asn")
+        sel_country = sel.get("country")
 
         evidence_drawer = ft.Container(
             content=ft.Column([
@@ -226,7 +226,7 @@ def render_alerts_view(app) -> ft.Column:
                     ft.Row([
                         ft.Column([
                             ft.Text("Heuristic Certainty", size=10, color="#64748B", weight=ft.FontWeight.BOLD),
-                            ft.Text("100% Deterministic", size=12, weight=ft.FontWeight.BOLD, color="#0284C7"),
+                            ft.Text(sel_conf_str, size=12, weight=ft.FontWeight.BOLD, color="#0284C7"),
                         ], spacing=2, expand=1),
                         ft.Column([
                             ft.Text("Triage Status", size=10, color="#64748B", weight=ft.FontWeight.BOLD),
@@ -237,7 +237,8 @@ def render_alerts_view(app) -> ft.Column:
 
                 ft.Divider(color="#F1F5F9", height=8),
 
-                # Threat Intelligence Quick Look
+                # Threat Intelligence Quick Look — real enrichment; private/LAN
+                # attackers have no public reputation, which we state honestly.
                 ft.Container(
                     content=ft.Column([
                         ft.Row([
@@ -247,13 +248,21 @@ def render_alerts_view(app) -> ft.Column:
                         ft.Row([
                             ft.Text("Abuse Confidence Score:", size=11, color="#64748B"),
                             ft.Container(
-                                content=ft.Text("98% Malicious" if "192.168.1.50" in sel_src or "192.168.1.1" in sel_src else "Clean (0%)", size=10, weight=ft.FontWeight.BOLD, color="#DC2626"),
-                                bgcolor="#FEE2E2", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
+                                content=ft.Text(
+                                    f"{sel_abuse}% Malicious" if isinstance(sel_abuse, int)
+                                    else "N/A (local/private host)",
+                                    size=10, weight=ft.FontWeight.BOLD,
+                                    color="#DC2626" if isinstance(sel_abuse, int) and sel_abuse >= 25 else "#64748B"),
+                                bgcolor="#FEE2E2" if isinstance(sel_abuse, int) and sel_abuse >= 25 else "#F1F5F9",
+                                border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([
                             ft.Text("Autonomous System:", size=11, color="#64748B"),
-                            ft.Text("AS13335 (Cloudflare / Local)", size=11, weight=ft.FontWeight.W_500, color="#0F172A"),
+                            ft.Text(
+                                f"{sel_asn}" + (f" · {sel_country}" if sel_country else "") if sel_asn
+                                else "Not applicable (LAN address)",
+                                size=11, weight=ft.FontWeight.W_500, color="#0F172A"),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ], spacing=6),
                     bgcolor="#F8FAFC", border=ft.Border.all(1, "#E2E8F0"), border_radius=8, padding=10,

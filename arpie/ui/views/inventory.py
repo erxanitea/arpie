@@ -1,14 +1,15 @@
-import datetime
 import flet as ft
 
 
 def render_inventory_view(app) -> ft.Column:
     ctx = app.network_context
-    ssid_name = ctx.ssid if ctx and ctx.ssid else "PLDTHOMEFIBR71598"
-    gw_ip = ctx.gateway_ip if ctx and ctx.gateway_ip else "192.168.1.1"
-    gw_mac = ctx.gateway_mac if ctx and ctx.gateway_mac else "00:50:56:C0:00:01"
-    iface = ctx.interface if ctx and ctx.interface else "wlan0"
-    cls = ctx.classification if ctx and ctx.classification else "public-untrusted"
+    ssid_name = (ctx.ssid if ctx and ctx.ssid else None) or "Not connected"
+    gw_ip = (ctx.gateway_ip if ctx and ctx.gateway_ip else None) or "Unknown"
+    gw_mac = (ctx.gateway_mac if ctx and ctx.gateway_mac else None) or "Resolving via ARP…"
+    iface = (ctx.interface if ctx and ctx.interface else None) or "Unknown"
+    cls = ctx.classification if ctx and ctx.classification else "unknown"
+    subnet = app.subnet_cidr or "Unknown"
+    local_ip = app.local_ip or "Unknown"
 
     is_trusted = (cls == "trusted")
     trust_label = "TRUSTED / PRIVATE NETWORK" if is_trusted else "PUBLIC / UNTRUSTED NETWORK"
@@ -57,8 +58,8 @@ def render_inventory_view(app) -> ft.Column:
                 _context_cell("GATEWAY IP & MAC", f"{gw_ip} ({gw_mac})", "Validated Default Gateway Binding", ft.Icons.DNS_ROUNDED),
             ], spacing=12),
             ft.Row([
-                _context_cell("SUBNET CIDR", "192.168.1.0/24", "Local Broadcast Domain Scope", ft.Icons.HUB_ROUNDED),
-                _context_cell("INTERFACE & SENSITIVITY", f"{iface} (Promiscuous)", "Elevated Heuristic Sensitivity", ft.Icons.SPEED_ROUNDED),
+                _context_cell("SUBNET CIDR", subnet, "Local Broadcast Domain Scope", ft.Icons.HUB_ROUNDED),
+                _context_cell("THIS ENDPOINT (attacker --target)", local_ip, f"Interface {iface}", ft.Icons.SPEED_ROUNDED),
             ], spacing=12),
         ], spacing=10),
         bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=16,
@@ -114,18 +115,7 @@ def render_inventory_view(app) -> ft.Column:
     )
 
     def do_scan(e):
-        app.devices_inventory.append({
-            "id": str(len(app.devices_inventory) + 1),
-            "hostname": "Discovered-Node",
-            "ip": f"192.168.1.{100 + len(app.devices_inventory)}",
-            "mac": "54:E1:AD:77:88:99",
-            "vendor": "Intel Corp.",
-            "type": "Laptop",
-            "status": "Trusted",
-            "last_seen": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        })
-        app.update_view_content()
-        app.page.update()
+        app.scan_subnet()
 
     inventory_card = ft.Container(
         content=ft.Column([
@@ -134,7 +124,9 @@ def render_inventory_view(app) -> ft.Column:
                     ft.Icon(ft.Icons.DEVICE_HUB_ROUNDED, color="#0F172A", size=20),
                     ft.Column([
                         ft.Text("Network Device Inventory", size=15, weight=ft.FontWeight.BOLD, color="#0F172A"),
-                        ft.Text(f"Tracking {len(app.devices_inventory)} discovered active endpoints on subnet", size=11, color="#64748B"),
+                        ft.Text(
+                            app.scan_status or f"Tracking {len(app.devices_inventory)} host(s) observed passively + via ARP sweep",
+                            size=11, color="#64748B"),
                     ], spacing=1),
                 ], spacing=8),
                 ft.ElevatedButton("Scan Local Subnet", icon=ft.Icons.REFRESH_ROUNDED, on_click=do_scan, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF", padding=10)),

@@ -177,7 +177,12 @@ def _build_spline_chart(app) -> ft.Container:
 
 
 def render_dashboard_view(app) -> ft.Column:
-    risk_score = _compute_risk_score(app.all_alerts_list)
+    # Authoritative session risk from arpie.risk (same heuristic the CLI uses),
+    # computed over the real Alert objects — not a UI-side re-derivation.
+    try:
+        risk_score = app.session_risk
+    except Exception:
+        risk_score = _compute_risk_score(app.all_alerts_list)
     risk_val = max(0.05, min(1.0, risk_score / 100.0))
     risk_color = "#DC2626" if risk_score >= 70 else ("#D97706" if risk_score >= 40 else "#10B981")
     risk_bg = "#FEE2E2" if risk_score >= 70 else ("#FEF3C7" if risk_score >= 40 else "#ECFDF5")
@@ -327,6 +332,8 @@ def render_dashboard_view(app) -> ft.Column:
             border=ft.Border(bottom=ft.BorderSide(1, "#F1F5F9")),
         ) for row in app.top_talkers_data
     ]
+    if not top_talkers_rows:
+        top_talkers_rows = [ft.Text("No traffic observed yet — start monitoring on an active interface.", size=12, color="#94A3B8")]
 
     top_talkers_card = ft.Container(
         content=ft.Column([

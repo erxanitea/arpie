@@ -26,14 +26,22 @@ def build_topbar(app) -> ft.Container:
     if is_evaluator:
         right_controls.append(
             ft.TextButton(
-                "⚡ Simulate Attack",
+                "⚡ Engine Self-Test",
                 icon=ft.Icons.BOLT_ROUNDED,
+                tooltip="Inject real attack packets through the live detection engine "
+                        "(no second device needed). Detections are produced by the real rules.",
                 on_click=lambda e: app.simulate_demo_threat(),
                 style=ft.ButtonStyle(color="#DC2626"),
             )
         )
 
     right_controls.extend([
+        ft.Row([
+            ft.Icon(ft.Icons.COMPUTER_ROUNDED, color="#64748B", size=16),
+            ft.Text(f"This host: {app.local_ip}" if app.local_ip else "Host IP: pending",
+                    size=12, weight=ft.FontWeight.W_500, color="#475569",
+                    tooltip="Use this as the attacker's --target"),
+        ], spacing=4),
         ft.Row([
             ft.Icon(ft.Icons.WIFI_ROUNDED, color="#64748B", size=16),
             ft.Text(ssid, size=12, weight=ft.FontWeight.W_500, color="#475569"),

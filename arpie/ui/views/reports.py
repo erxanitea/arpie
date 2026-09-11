@@ -31,6 +31,11 @@ def _risk_label(score):
 
 
 def render_reports_view(app) -> ft.Column:
+    try:
+        session_risk = app.session_risk
+    except Exception:
+        session_risk = _compute_report_risk(app.all_alerts_list)
+
     def export_fmt(fmt, target_sid=None):
         app.export_report(fmt, target_session_id=target_sid)
 
@@ -128,9 +133,9 @@ def render_reports_view(app) -> ft.Column:
                         ),
                         ft.Text(f"Detected Threats: {len(app.all_alerts_list)} security incidents", size=12, color="#475569"),
                         ft.Text(
-                            f"Overall Risk Index: {_compute_report_risk(app.all_alerts_list)} / 100 ({_risk_label(_compute_report_risk(app.all_alerts_list))})",
+                            f"Overall Risk Index: {session_risk} / 100 ({_risk_label(session_risk)})",
                             size=12, weight=ft.FontWeight.BOLD,
-                            color="#DC2626" if _compute_report_risk(app.all_alerts_list) >= 50 else "#D97706" if _compute_report_risk(app.all_alerts_list) >= 25 else "#10B981",
+                            color="#DC2626" if session_risk >= 50 else "#D97706" if session_risk >= 25 else "#10B981",
                         ),
                     ], spacing=4),
                     bgcolor="#F8FAFC", border=ft.Border.all(1, "#E2E8F0"), border_radius=8, padding=16,

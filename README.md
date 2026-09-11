@@ -44,9 +44,10 @@ arpie/
 │   │   └── gateway_change.py
 │   ├── threat_intel.py         # AbuseIPDB + IPinfo Lite + caching
 │   ├── risk.py                 # heuristic scoring
-│   ├── seal.py                 # firewall block/unblock + audit log
+│   ├── seal.py                 # firewall block/unblock + audit log + crash reconcile
 │   ├── report.py               # JSON/HTML/PDF export
-│   └── ui.py                   # Flet dashboard
+│   ├── discovery.py            # local IP/subnet, ARP-sweep host enumeration, OUI lookup
+│   └── ui/                     # Flet desktop app (app shell + views/ + components/)
 └── tests/
     ├── conftest.py
     ├── test_detection.py
@@ -93,6 +94,20 @@ python main.py
 ```bash
 python main.py --pcap sample_pcaps/your_capture.pcap
 ```
+
+### Live two-device demo
+
+To see Arpie detect a **real** attacker device on the same network — the full
+presentation flow, including which IP the attacker targets and how to respond
+with Seal Mode — follow **[docs/DEMO.md](docs/DEMO.md)**. No second device on
+hand? The **Engine Self-Test** button and PCAP replay drive the identical
+detection pipeline.
+
+> **Scope, stated honestly:** Arpie is an *endpoint* IDS — a layer-2 trust
+> monitor (ARP/gateway) plus a detector for scans/floods **aimed at this host**.
+> On modern WPA2/WPA3 Wi-Fi an endpoint cannot see other clients' encrypted
+> traffic, and Arpie does not pretend to. Every alert, device, and metric in the
+> UI reflects real observation.
 
 ## Testing
 
