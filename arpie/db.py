@@ -3,11 +3,20 @@ SQLite storage for sessions, events, evidence, scores, and actions.
 """
 
 import hashlib
+import hmac
 import json
+import os
 import sqlite3
 import time
 from contextlib import contextmanager
 from pathlib import Path
+
+# scrypt work factors (OpenSSL-backed via hashlib). n*r*128 bytes of memory,
+# ~16 MB here — strong against offline cracking, still instant to verify.
+_SCRYPT_N = 16384
+_SCRYPT_R = 8
+_SCRYPT_P = 1
+_SCRYPT_MAXMEM = 64 * 1024 * 1024
 
 
 SCHEMA = """
@@ -116,7 +125,38 @@ class Database:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        return hashlib.sha256(password.encode("utf-8")).hexdigest()
+        """Salted scrypt hash in a self-describing format:
+        ``scrypt$<n>$<r>$<p>$<salt_hex>$<derived_hex>``."""
+        salt = os.urandom(16)
+        dk = hashlib.scrypt(
+            password.encode("utf-8"), salt=salt,
+            n=_SCRYPT_N, r=_SCRYPT_R, p=_SCRYPT_P, maxmem=_SCRYPT_MAXMEM,
+        )
+        return f"scrypt${_SCRYPT_N}${_SCRYPT_R}${_SCRYPT_P}${salt.hex()}${dk.hex()}"
+
+    @staticmethod
+    def _verify_password(stored: str, password: str) -> bool:
+        """Constant-time verify against either the scrypt format or a legacy
+        unsalted SHA-256 hex digest (for databases created before the upgrade)."""
+        if not stored:
+            return False
+        if stored.startswith("scrypt$"):
+            try:
+                _, n, r, p, salt_hex, dk_hex = stored.split("$")
+                dk = hashlib.scrypt(
+                    password.encode("utf-8"), salt=bytes.fromhex(salt_hex),
+                    n=int(n), r=int(r), p=int(p), maxmem=_SCRYPT_MAXMEM,
+                )
+                return hmac.compare_digest(dk.hex(), dk_hex)
+            except Exception:
+                return False
+        # Legacy: unsalted SHA-256 (transparently upgraded on next login).
+        legacy = hashlib.sha256(password.encode("utf-8")).hexdigest()
+        return hmac.compare_digest(legacy, stored)
+
+    @staticmethod
+    def _is_legacy_hash(stored: str) -> bool:
+        return bool(stored) and not stored.startswith("scrypt$")
 
     # ---- operators ----
     def has_operators(self) -> bool:
@@ -140,8 +180,12 @@ class Database:
                 (identifier.strip(), identifier.strip()),
             )
             row = cur.fetchone()
-            if row and row["password_hash"] == self._hash_password(password):
+            if row and self._verify_password(row["password_hash"], password):
                 cur.execute("UPDATE operators SET last_login_at = ? WHERE id = ?", (time.time(), row["id"]))
+                # Transparently migrate legacy unsalted hashes to salted scrypt.
+                if self._is_legacy_hash(row["password_hash"]):
+                    cur.execute("UPDATE operators SET password_hash = ? WHERE id = ?",
+                                (self._hash_password(password), row["id"]))
                 return dict(row)
             return None
 

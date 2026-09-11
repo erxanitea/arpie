@@ -51,3 +51,47 @@ def test_setup_admin_and_end_user_lifecycle():
     finally:
         if os.path.exists(db_path):
             os.remove(db_path)
+
+
+def test_passwords_are_salted_and_unique():
+    """Two accounts with the same password must not share a stored hash."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    try:
+        db = Database(db_path)
+        db.create_operator("u1", "u1@x.com", "samepass", role="End User")
+        db.create_operator("u2", "u2@x.com", "samepass", role="End User")
+        h1 = db.get_operator("u1")["password_hash"]
+        h2 = db.get_operator("u2")["password_hash"]
+        assert h1.startswith("scrypt$") and h2.startswith("scrypt$")
+        assert h1 != h2  # per-user salt
+        assert db.authenticate_operator("u1", "samepass") is not None
+        assert db.authenticate_operator("u1", "wrong") is None
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+
+def test_legacy_sha256_hash_migrates_on_login():
+    """A pre-upgrade unsalted SHA-256 row must still authenticate and be
+    transparently rewritten as salted scrypt."""
+    import hashlib
+    import sqlite3
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    try:
+        db = Database(db_path)
+        db.create_operator("legacy", "legacy@x.com", "placeholder", role="End User")
+        legacy = hashlib.sha256(b"realpass").hexdigest()
+        conn = sqlite3.connect(db_path)
+        conn.execute("UPDATE operators SET password_hash = ? WHERE username = ?", (legacy, "legacy"))
+        conn.commit()
+        conn.close()
+
+        assert db.authenticate_operator("legacy", "realpass") is not None
+        assert db.get_operator("legacy")["password_hash"].startswith("scrypt$")
+        assert db.authenticate_operator("legacy", "realpass") is not None
+        assert db.authenticate_operator("legacy", "realpass2") is None
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
