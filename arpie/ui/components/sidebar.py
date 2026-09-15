@@ -49,23 +49,12 @@ def build_sidebar(app) -> ft.Container:
             ft.Row([
                 ft.Text("MONITORING", size=10, weight=ft.FontWeight.BOLD, color="#94A3B8"),
                 ft.Row([
-                    ft.Container(width=6, height=6, border_radius=3, bgcolor="#10B981" if app.is_monitoring else "#64748B"),
-                    ft.Text("ACTIVE" if app.is_monitoring else "PAUSED", size=10, weight=ft.FontWeight.BOLD, color="#10B981" if app.is_monitoring else "#94A3B8"),
+                    app.sidebar_status_dot,
+                    app.sidebar_status_text,
                 ], spacing=4)
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             app.sidebar_timer_text,
-            ft.ElevatedButton(
-                content=ft.Row([
-                    ft.Icon(ft.Icons.STOP_ROUNDED if app.is_monitoring else ft.Icons.PLAY_ARROW_ROUNDED, color="#FFFFFF", size=16),
-                    ft.Text("Stop Monitoring" if app.is_monitoring else "Resume", size=12, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
-                ], alignment=ft.MainAxisAlignment.CENTER, spacing=6),
-                style=ft.ButtonStyle(
-                    bgcolor="#DC2626" if app.is_monitoring else "#10B981",
-                    shape=ft.RoundedRectangleBorder(radius=6),
-                ),
-                on_click=lambda e: app.toggle_monitoring(),
-                width=200,
-            )
+            app.sidebar_toggle_btn,
         ], spacing=6),
         padding=12,
         border_radius=10,

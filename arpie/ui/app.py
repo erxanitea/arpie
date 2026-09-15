@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import random
 import threading
@@ -24,6 +25,7 @@ from .views.context import render_context_screen
 from .views.dashboard import render_dashboard_view
 from .views.inventory import render_inventory_view
 from .views.login import render_login_screen
+from .views.mfa import render_mfa_challenge_screen
 from .views.packets import render_packets_view
 from .views.profile import render_profile_screen
 from .views.register import render_register_screen
@@ -68,6 +70,8 @@ class ArpieApp:
 
         self.is_monitoring = False
         self.monitoring_start_time = None
+        self.accumulated_seconds = 0.0
+        self.last_resume_time = 0.0
         self.timer_thread: Optional[threading.Thread] = None
         self.timer_running = False
 
@@ -75,6 +79,7 @@ class ArpieApp:
         self.operator_username = ""
         self.operator_email = ""
         self.operator_last_login = ""
+        self._pending_operator: Optional[dict] = None
 
         self.alerts: list[Alert] = []
         self.enrichments: dict[str, IpEnrichment] = {}
@@ -122,6 +127,19 @@ class ArpieApp:
 
         self.timer_text = ft.Text("00:00:00", size=24, weight=ft.FontWeight.BOLD, color="#0F172A")
         self.sidebar_timer_text = ft.Text("00:00:00", size=16, weight=ft.FontWeight.BOLD, color="#FFFFFF")
+        self.sidebar_status_dot = ft.Container(width=6, height=6, border_radius=3, bgcolor="#64748B")
+        self.sidebar_status_text = ft.Text("PAUSED", size=10, weight=ft.FontWeight.BOLD, color="#94A3B8")
+        self.sidebar_btn_icon = ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED, color="#FFFFFF", size=16)
+        self.sidebar_btn_text = ft.Text("Resume", size=12, weight=ft.FontWeight.BOLD, color="#FFFFFF")
+        self.sidebar_toggle_btn = ft.ElevatedButton(
+            content=ft.Row([self.sidebar_btn_icon, self.sidebar_btn_text], alignment=ft.MainAxisAlignment.CENTER, spacing=6),
+            style=ft.ButtonStyle(
+                bgcolor="#10B981",
+                shape=ft.RoundedRectangleBorder(radius=6),
+            ),
+            on_click=lambda e: self.toggle_monitoring(),
+            width=200,
+        )
 
         self.sidebar_btn_refs = []
         self.content_area = ft.Container(expand=True, bgcolor="#F8FAFC", padding=20)
@@ -133,6 +151,7 @@ class ArpieApp:
         self._init_page()
         self.page.add(self.root_container)
         self.render()
+        self.page.run_task(self._timer_task)
 
     def _init_page(self):
         self.page.title = "Arpie — Endpoint NIDS & Threat Response"
@@ -152,6 +171,8 @@ class ArpieApp:
             self.root_container.content = render_register_screen(self)
         elif self.current_screen == "login":
             self.root_container.content = render_login_screen(self)
+        elif self.current_screen == "mfa_challenge":
+            self.root_container.content = render_mfa_challenge_screen(self)
         elif self.current_screen == "context":
             self.root_container.content = render_context_screen(self)
         elif self.current_screen == "profile":
@@ -230,10 +251,42 @@ class ArpieApp:
                     ft.Text(f"Render error: {exc}", size=14, color="#DC2626"),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER, expand=True)
 
+    def update_monitoring_ui(self):
+        is_mon = self.is_monitoring
+        self.sidebar_status_dot.bgcolor = "#10B981" if is_mon else "#64748B"
+        self.sidebar_status_text.value = "ACTIVE" if is_mon else "PAUSED"
+        self.sidebar_status_text.color = "#10B981" if is_mon else "#94A3B8"
+        self.sidebar_btn_icon.name = ft.Icons.STOP_ROUNDED if is_mon else ft.Icons.PLAY_ARROW_ROUNDED
+        self.sidebar_btn_text.value = "Stop Monitoring" if is_mon else "Resume"
+        self.sidebar_toggle_btn.style = ft.ButtonStyle(
+            bgcolor="#DC2626" if is_mon else "#10B981",
+            shape=ft.RoundedRectangleBorder(radius=6),
+        )
+        try:
+            if self.sidebar_status_dot.page is not None:
+                self.sidebar_status_dot.update()
+            if self.sidebar_status_text.page is not None:
+                self.sidebar_status_text.update()
+            if self.sidebar_toggle_btn.page is not None:
+                self.sidebar_toggle_btn.update()
+        except Exception:
+            pass
+
     def logout(self):
         if self.is_monitoring:
             self.is_monitoring = False
             self.timer_running = False
+        self.accumulated_seconds = 0.0
+        self.last_resume_time = 0.0
+        self.timer_text.value = "00:00:00"
+        self.sidebar_timer_text.value = "00:00:00"
+        self.update_monitoring_ui()
+        if self.live_capture:
+            try:
+                self.live_capture.stop()
+            except Exception:
+                pass
+            self.live_capture = None
         if self.session_id:
             try:
                 self.db.end_session(self.session_id)
@@ -246,8 +299,50 @@ class ArpieApp:
         self.user_name = ""
         self.user_role = "End User"
         self.status_toast = ""
+        self._pending_operator = None
         self.current_screen = "login"
         self.render()
+
+    def verify_mfa_login(self, code: str) -> tuple[bool, str]:
+        from ..mfa import verify as mfa_verify
+        op = self._pending_operator
+        if not op:
+            return False, "No pending MFA session."
+        secret = self.db.get_totp_secret(op["username"])
+        if not secret:
+            return False, "TOTP not configured."
+        if not mfa_verify(secret, code):
+            return False, "Invalid or expired code. Try again."
+        self._complete_login(op)
+        return True, ""
+
+    def cancel_mfa_login(self):
+        self._pending_operator = None
+        self.current_screen = "login"
+        self.render()
+
+    def _complete_login(self, operator: dict):
+        import datetime
+        from ..network_context import detect_network_context
+        self.operator_id = operator.get("id")
+        self.user_name = operator.get("display_name") or operator.get("username", "")
+        self.user_role = operator.get("role", "End User")
+        self.operator_username = operator.get("username", "")
+        self.operator_email = operator.get("email", "")
+        self.operator_last_login = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.network_context = detect_network_context()
+        self._pending_operator = None
+        self.current_screen = "context"
+        self.render()
+
+    def enable_totp(self, username: str) -> str:
+        from ..mfa import generate_secret
+        secret = generate_secret()
+        self.db.set_totp_secret(username, secret)
+        return secret
+
+    def disable_totp(self, username: str):
+        self.db.set_totp_secret(username, None)
 
     def set_severity_filter(self, label: str):
         self.active_severity_filter = label
@@ -410,9 +505,20 @@ class ArpieApp:
                 }
                 self.all_alerts_list.insert(0, alert_dict)
 
+                # Evaluate threat intelligence enrichment if source is public
+                enrichment = None
+                lookup_ip = alert.source_ip or src_ip
+                if lookup_ip and self.threat_intel:
+                    try:
+                        enrichment = self.threat_intel.enrich(lookup_ip)
+                        if enrichment:
+                            self.enrichments[lookup_ip] = enrichment
+                    except Exception:
+                        pass
+
                 # Log event to database
                 if self.session_id:
-                    score = score_alert(alert, None)
+                    score = score_alert(alert, enrichment)
                     self.db.log_event(
                         self.session_id,
                         alert.detection_type,
@@ -443,8 +549,9 @@ class ArpieApp:
 
     def start_monitoring(self):
         self.is_monitoring = True
-        self.monitoring_start_time = time.time()
-        self.timer_running = True
+        self.accumulated_seconds = 0.0
+        self.last_resume_time = time.time()
+        self.monitoring_start_time = self.last_resume_time
 
         ctx = detect_network_context()
         self.network_context = ctx
@@ -457,9 +564,7 @@ class ArpieApp:
             self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
             self.capture_thread.start()
 
-        if not self.timer_thread or not self.timer_thread.is_alive():
-            self.timer_thread = threading.Thread(target=self._timer_loop, daemon=True)
-            self.timer_thread.start()
+        self.update_monitoring_ui()
 
     def _start_capture_safe(self):
         try:
@@ -471,26 +576,24 @@ class ArpieApp:
     def toggle_monitoring(self):
         self.is_monitoring = not self.is_monitoring
         if not self.is_monitoring:
-            self.timer_running = False
+            if self.last_resume_time > 0:
+                self.accumulated_seconds += time.time() - self.last_resume_time
+                self.last_resume_time = 0.0
             if self.live_capture:
                 self.live_capture.stop()
                 self.live_capture = None
         else:
-            self.timer_running = True
-            if not self.monitoring_start_time:
-                self.monitoring_start_time = time.time()
+            self.last_resume_time = time.time()
             if not self.live_capture:
                 ctx = self.network_context or detect_network_context()
                 self.live_capture = LiveCapture(interface=ctx.interface or "wlan0", on_packet=self._process_packet)
                 self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
                 self.capture_thread.start()
-            if not self.timer_thread or not self.timer_thread.is_alive():
-                self.timer_thread = threading.Thread(target=self._timer_loop, daemon=True)
-                self.timer_thread.start()
+        self.update_monitoring_ui()
         self.update_view_content()
         self.page.update()
 
-    def _timer_loop(self):
+    async def _timer_task(self):
         sample_endpoints = [
             ("192.168.1.10", "192.168.1.1", "ARP", "00:0C:29:4F:11:AA", "00:50:56:C0:00:01", "42"),
             ("192.168.1.15", "8.8.8.8", "DNS (Query: google.com)", "00:1E:50:32:BB:CC", "00:50:56:C0:00:01", "74"),
@@ -498,15 +601,11 @@ class ArpieApp:
             ("192.168.1.105", "142.250.190.46", "TLSv1.3 Handshake", "00:1E:50:32:BB:CC", "00:50:56:C0:00:01", "512"),
             ("192.168.1.1", "192.168.1.15", "UDP (NTP)", "00:50:56:C0:00:01", "00:1E:50:32:BB:CC", "90"),
         ]
-        tick_counter = 0
 
-        while self.timer_running:
-            time.sleep(1)
-            tick_counter += 1
-
-            # 1. Update Timer text
-            if self.monitoring_start_time and self.page:
-                elapsed = int(time.time() - self.monitoring_start_time)
+        while True:
+            await asyncio.sleep(1)
+            if self.is_monitoring and self.last_resume_time > 0 and self.current_screen == "app_shell":
+                elapsed = int(self.accumulated_seconds + (time.time() - self.last_resume_time))
                 hrs = elapsed // 3600
                 mins = (elapsed % 3600) // 60
                 secs = elapsed % 60
@@ -514,11 +613,9 @@ class ArpieApp:
                 self.timer_text.value = timestr
                 self.sidebar_timer_text.value = timestr
 
-                # 2. Simulate live background packets & stream
                 delta_pkts = random.randint(12, 38)
                 self.packets_count += delta_pkts
 
-                # Add a simulated packet entry to the live stream
                 ep = random.choice(sample_endpoints)
                 now_str = datetime.datetime.now().strftime("%H:%M:%S.%f")[:12]
                 self.packet_log_stream.insert(0, {
@@ -534,10 +631,8 @@ class ArpieApp:
                     self.packet_log_stream.pop()
 
                 try:
-                    if self.sidebar_timer_text.page is not None:
-                        self.sidebar_timer_text.update()
-                    if self.timer_text.page is not None:
-                        self.timer_text.update()
+                    if self.page:
+                        self.page.update()
                 except Exception:
                     pass
 

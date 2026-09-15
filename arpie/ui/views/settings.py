@@ -1,4 +1,7 @@
 import flet as ft
+from ...validation import validate_password
+from ... import secrets_store
+from ...mfa import provisioning_uri
 from .profile import _make_param_field
 
 
@@ -54,8 +57,9 @@ def render_settings_view(app) -> ft.Column:
             return
 
         if new_pw:
-            if len(new_pw) < 4:
-                op_status_text.value = "New password must be at least 4 characters."
+            pw_ok, pw_err = validate_password(new_pw, username=app.operator_username, email=app.operator_email)
+            if not pw_ok:
+                op_status_text.value = pw_err
                 op_status_text.color = "#DC2626"
                 op_status_text.visible = True
                 app.page.update()
@@ -130,12 +134,102 @@ def render_settings_view(app) -> ft.Column:
 
     cards: list[ft.Control] = [operator_card]
 
+    has_totp = app.db.get_totp_secret(app.operator_username) is not None
+    totp_status = ft.Text(
+        "✅ Enabled" if has_totp else "Disabled",
+        size=12, weight=ft.FontWeight.BOLD,
+        color="#10B981" if has_totp else "#94A3B8",
+    )
+    totp_secret_display = ft.Text("", size=11, color="#475569", selectable=True, visible=False)
+    totp_uri_display = ft.Text("", size=10, color="#64748B", selectable=True, visible=False)
+
+    def on_toggle_totp(e):
+        if has_totp:
+            app.disable_totp(app.operator_username)
+            totp_status.value = "Disabled"
+            totp_status.color = "#94A3B8"
+            totp_secret_display.visible = False
+            totp_uri_display.visible = False
+        else:
+            secret = app.enable_totp(app.operator_username)
+            totp_status.value = "✅ Enabled"
+            totp_status.color = "#10B981"
+            uri = provisioning_uri(secret, app.operator_email or app.operator_username)
+            totp_secret_display.value = f"Secret: {secret}"
+            totp_secret_display.visible = True
+            totp_uri_display.value = f"URI: {uri}"
+            totp_uri_display.visible = True
+        app.page.update()
+
+    mfa_card = ft.Container(
+        content=ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.VERIFIED_USER_ROUNDED, color="#0F172A", size=22),
+                ft.Column([
+                    ft.Text("Two-Factor Authentication (TOTP)", size=16, weight=ft.FontWeight.BOLD, color="#0F172A"),
+                    ft.Text("Add an authenticator app for extra login security.", size=12, color="#64748B"),
+                ], spacing=1),
+            ], spacing=10),
+            ft.Divider(color="#E2E8F0", height=12),
+            ft.Row([
+                ft.Text("Status:", size=13, color="#475569"),
+                totp_status,
+            ], spacing=8),
+            totp_secret_display,
+            totp_uri_display,
+            ft.ElevatedButton(
+                "Disable 2FA" if has_totp else "Enable 2FA",
+                icon=ft.Icons.LOCK_OPEN_ROUNDED if has_totp else ft.Icons.LOCK_ROUNDED,
+                on_click=on_toggle_totp,
+                style=ft.ButtonStyle(
+                    bgcolor="#DC2626" if has_totp else "#0F172A",
+                    color="#FFFFFF", padding=12,
+                ),
+            ),
+        ], spacing=12),
+        bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=20,
+    )
+    cards.append(mfa_card)
+
     if is_evaluator:
-        abuse_field = ft.TextField(label="AbuseIPDB API Key", password=True, can_reveal_password=True, value="••••••••••••••••••••••••", border_radius=8, dense=True)
-        ipinfo_field = ft.TextField(label="IPInfo Token", password=True, can_reveal_password=True, value="••••••••••••••••••••••••", border_radius=8, dense=True)
+        stored_abuse = secrets_store.get_secret("ABUSEIPDB_API_KEY") or ""
+        stored_ipinfo = secrets_store.get_secret("IPINFO_API_KEY") or ""
+        abuse_field = ft.TextField(
+            label="AbuseIPDB API Key", password=True, can_reveal_password=True,
+            value=stored_abuse, border_radius=8, dense=True,
+            hint_text="Paste your AbuseIPDB key",
+        )
+        ipinfo_field = ft.TextField(
+            label="IPInfo Token", password=True, can_reveal_password=True,
+            value=stored_ipinfo, border_radius=8, dense=True,
+            hint_text="Paste your IPInfo token",
+        )
+
+        api_status = ft.Text("", size=12, weight=ft.FontWeight.W_600, visible=False)
 
         def save_conf(e):
-            app.status_toast = "Detection configuration successfully saved to database."
+            abuse_val = (abuse_field.value or "").strip()
+            ipinfo_val = (ipinfo_field.value or "").strip()
+            saved_any = False
+            if abuse_val:
+                if secrets_store.set_secret("ABUSEIPDB_API_KEY", abuse_val):
+                    saved_any = True
+                    import os
+                    os.environ["ABUSEIPDB_API_KEY"] = abuse_val
+            if ipinfo_val:
+                if secrets_store.set_secret("IPINFO_API_KEY", ipinfo_val):
+                    saved_any = True
+                    import os
+                    os.environ["IPINFO_API_KEY"] = ipinfo_val
+
+            if saved_any and secrets_store.available():
+                api_status.value = "API keys saved to OS keyring."
+                api_status.color = "#10B981"
+            else:
+                api_status.value = "Keys applied for this session (keyring unavailable — set env vars for persistence)."
+                api_status.color = "#F59E0B"
+            api_status.visible = True
+            app.status_toast = "Detection configuration saved."
             app.update_view_content()
             app.page.update()
 
@@ -153,6 +247,7 @@ def render_settings_view(app) -> ft.Column:
                     ft.Container(content=abuse_field, expand=1),
                     ft.Container(content=ipinfo_field, expand=1),
                 ], spacing=12),
+                api_status,
                 ft.Divider(color="#F1F5F9", height=8),
                 ft.Text("Detection Rule Thresholds", size=14, weight=ft.FontWeight.BOLD, color="#0F172A"),
                 _make_param_field(app, "Traffic Anomaly Threshold", app.thresholds.get("traffic", "100"), "packets/sec", "traffic"),

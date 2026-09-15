@@ -1,5 +1,7 @@
 import datetime
+import threading
 import flet as ft
+from ...discovery import arp_sweep, mac_vendor, local_ipv4_and_cidr
 
 
 def render_inventory_view(app) -> ft.Column:
@@ -113,19 +115,50 @@ def render_inventory_view(app) -> ft.Column:
         show_checkbox_column=False,
     )
 
+    scan_status = ft.Text("", size=11, color="#64748B", visible=False)
+    scan_spinner = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
+
     def do_scan(e):
-        app.devices_inventory.append({
-            "id": str(len(app.devices_inventory) + 1),
-            "hostname": "Discovered-Node",
-            "ip": f"192.168.1.{100 + len(app.devices_inventory)}",
-            "mac": "54:E1:AD:77:88:99",
-            "vendor": "Intel Corp.",
-            "type": "Laptop",
-            "status": "Trusted",
-            "last_seen": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        })
-        app.update_view_content()
+        scan_status.value = "Scanning local subnet…"
+        scan_status.visible = True
+        scan_spinner.visible = True
         app.page.update()
+
+        def _run():
+            ctx = app.network_context
+            iface = ctx.interface if ctx else None
+            _, cidr = local_ipv4_and_cidr(iface)
+            if not cidr:
+                cidr = "192.168.1.0/24"
+
+            hosts = arp_sweep(cidr, iface=iface, timeout=3)
+            existing_ips = {d["ip"] for d in app.devices_inventory}
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            added = 0
+            for h in hosts:
+                if h["ip"] not in existing_ips:
+                    vendor = mac_vendor(h["mac"])
+                    app.devices_inventory.append({
+                        "id": str(len(app.devices_inventory) + 1),
+                        "hostname": f"Host-{h['ip'].split('.')[-1]}",
+                        "ip": h["ip"],
+                        "mac": h["mac"],
+                        "vendor": vendor,
+                        "type": "Endpoint",
+                        "status": "Discovered",
+                        "last_seen": now,
+                    })
+                    added += 1
+
+            scan_spinner.visible = False
+            scan_status.value = f"Scan complete — {added} new host(s) discovered ({len(hosts)} total responded)"
+            try:
+                app.update_view_content()
+                app.page.update()
+            except Exception:
+                pass
+
+        threading.Thread(target=_run, daemon=True).start()
 
     inventory_card = ft.Container(
         content=ft.Column([
@@ -139,6 +172,7 @@ def render_inventory_view(app) -> ft.Column:
                 ], spacing=8),
                 ft.ElevatedButton("Scan Local Subnet", icon=ft.Icons.REFRESH_ROUNDED, on_click=do_scan, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF", padding=10)),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ft.Row([scan_spinner, scan_status], spacing=8, visible=True),
             ft.Divider(color="#E2E8F0", height=12),
             ft.Row([table], scroll=ft.ScrollMode.AUTO),
             ft.Divider(color="#F1F5F9", height=10),

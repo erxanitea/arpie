@@ -44,6 +44,14 @@ def _make_param_field(app, label: str, default_val: str, unit: str, param_key: s
 def render_profile_screen(app) -> ft.Container:
     def select_profile(prof_name):
         app.selected_profile = prof_name
+        if prof_name == "Balanced":
+            app.thresholds["traffic"] = "250"
+            app.thresholds["port"] = "30"
+            app.thresholds["arp_window"] = "10"
+        elif prof_name == "Public Wi-Fi":
+            app.thresholds["traffic"] = "100"
+            app.thresholds["port"] = "15"
+            app.thresholds["arp_window"] = "5"
         app.render()
 
     def on_start_monitoring(e):

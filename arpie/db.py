@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS operators (
     password_hash TEXT NOT NULL,
     display_name TEXT,
     role TEXT NOT NULL DEFAULT 'End User',
+    totp_secret TEXT,
     created_at REAL NOT NULL,
     last_login_at REAL
 );
@@ -95,6 +96,17 @@ class Database:
     def _init_schema(self):
         with self._connect() as conn:
             conn.executescript(SCHEMA)
+            cur = conn.cursor()
+            cur.execute("PRAGMA table_info(operators)")
+            cols = {row["name"] for row in cur.fetchall()}
+            if "totp_secret" not in cols:
+                conn.execute("ALTER TABLE operators ADD COLUMN totp_secret TEXT")
+
+            cur.execute("PRAGMA table_info(sessions)")
+            s_cols = {row["name"] for row in cur.fetchall()}
+            if "operator_id" not in s_cols:
+                conn.execute("ALTER TABLE sessions ADD COLUMN operator_id INTEGER")
+            conn.commit()
 
     @contextmanager
     def cursor(self):
@@ -178,6 +190,20 @@ class Database:
         with self.cursor() as cur:
             cur.execute("SELECT id, username, email, display_name, role, created_at, last_login_at FROM operators ORDER BY id ASC")
             return [dict(r) for r in cur.fetchall()]
+
+    def get_totp_secret(self, username: str) -> str | None:
+        with self.cursor() as cur:
+            cur.execute("SELECT totp_secret FROM operators WHERE LOWER(username) = LOWER(?)", (username.strip(),))
+            row = cur.fetchone()
+            return row["totp_secret"] if row and row["totp_secret"] else None
+
+    def set_totp_secret(self, username: str, secret: str | None) -> bool:
+        with self.cursor() as cur:
+            cur.execute(
+                "UPDATE operators SET totp_secret = ? WHERE LOWER(username) = LOWER(?)",
+                (secret, username.strip()),
+            )
+            return cur.rowcount > 0
 
     # ---- sessions ----
     def start_session(self, ssid, network_context, interface, source="live", operator_id=None):

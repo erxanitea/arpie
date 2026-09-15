@@ -64,6 +64,7 @@ def render_context_screen(app) -> ft.Container:
         type_bg = "#F8FAFC"
         type_border = "#E2E8F0"
 
+    init_rg_val = "trusted" if cl == "trusted" else ("unknown" if cl == "unknown" else "public")
     classification_rg = ft.RadioGroup(
         content=ft.Column([
             ft.Container(
@@ -100,10 +101,21 @@ def render_context_screen(app) -> ft.Container:
                 padding=10, border=ft.Border.all(1, "#E2E8F0"), border_radius=8,
             ),
         ], spacing=10),
-        value="public",
+        value=init_rg_val,
     )
 
     def on_continue(e):
+        sel_val = classification_rg.value
+        if sel_val and app.network_context:
+            if sel_val == "public":
+                app.network_context.classification = "public-untrusted"
+                app.selected_profile = "Public Wi-Fi"
+            elif sel_val == "trusted":
+                app.network_context.classification = "trusted"
+                app.selected_profile = "Balanced"
+            elif sel_val == "unknown":
+                app.network_context.classification = "unknown"
+                app.selected_profile = "Custom"
         app.current_screen = "profile"
         app.render()
 

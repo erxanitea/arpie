@@ -1,7 +1,7 @@
 import datetime
-import re
 import flet as ft
 from ...network_context import detect_network_context
+from ...validation import validate_email, validate_password, password_strength
 from ..theme import LOGO_PATH
 
 
@@ -41,8 +41,25 @@ def render_register_screen(app) -> ft.Container:
         focused_border_color="#DC2626",
         text_size=13,
     )
+    strength_colors = ["#DC2626", "#F59E0B", "#F59E0B", "#10B981", "#059669"]
+    strength_bar = ft.ProgressBar(value=0, width=300, color="#E2E8F0", bgcolor="#F1F5F9")
+    strength_label = ft.Text("", size=10, color="#64748B", weight=ft.FontWeight.W_600)
+
+    def on_pw_change(e):
+        pw = password_field.value or ""
+        if pw:
+            score, label = password_strength(pw)
+            strength_bar.value = score / 4
+            strength_bar.color = strength_colors[score]
+            strength_label.value = f"Strength: {label}"
+        else:
+            strength_bar.value = 0
+            strength_bar.color = "#E2E8F0"
+            strength_label.value = ""
+        app.page.update()
+
     password_field = ft.TextField(
-        hint_text="Create a password (min 4 chars)",
+        hint_text="Create a password (min 8 chars)",
         password=True,
         can_reveal_password=True,
         prefix_icon=ft.Icons.LOCK_OUTLINE_ROUNDED,
@@ -52,6 +69,7 @@ def render_register_screen(app) -> ft.Container:
         border_color="#E2E8F0",
         focused_border_color="#DC2626",
         text_size=13,
+        on_change=on_pw_change,
     )
     confirm_pw_field = ft.TextField(
         hint_text="Confirm your password",
@@ -91,13 +109,15 @@ def render_register_screen(app) -> ft.Container:
             error_msg.visible = True
             app.page.update()
             return
-        if not email or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-            error_msg.value = "Please enter a valid email address."
+        email_ok, email_err = validate_email(email)
+        if not email_ok:
+            error_msg.value = email_err
             error_msg.visible = True
             app.page.update()
             return
-        if len(pw) < 4:
-            error_msg.value = "Password must be at least 4 characters."
+        pw_ok, pw_err = validate_password(pw, username=uname, email=email)
+        if not pw_ok:
+            error_msg.value = pw_err
             error_msg.visible = True
             app.page.update()
             return
@@ -216,6 +236,8 @@ def render_register_screen(app) -> ft.Container:
         ft.Column([
             ft.Text("Password", size=12, weight=ft.FontWeight.W_600, color="#0F172A"),
             password_field,
+            strength_bar,
+            strength_label,
         ], spacing=3, tight=True),
         ft.Column([
             ft.Text("Confirm Password", size=12, weight=ft.FontWeight.W_600, color="#0F172A"),

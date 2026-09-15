@@ -48,6 +48,13 @@ def test_setup_admin_and_end_user_lifecycle():
         # 3. Invalid credentials rejected
         assert db.authenticate_operator("evaluator", "wrongpass") is None
         assert db.authenticate_operator("student_era", "wrongpass") is None
+
+        # 4. TOTP secret management
+        assert db.get_totp_secret("evaluator") is None
+        db.set_totp_secret("evaluator", "JBSWY3DPEHPK3PXP")
+        assert db.get_totp_secret("evaluator") == "JBSWY3DPEHPK3PXP"
+        db.set_totp_secret("evaluator", None)
+        assert db.get_totp_secret("evaluator") is None
     finally:
         if os.path.exists(db_path):
             os.remove(db_path)

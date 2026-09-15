@@ -44,15 +44,13 @@ def render_login_screen(app) -> ft.Container:
 
         operator = app.db.authenticate_operator(entered_id, entered_p)
         if operator:
-            app.operator_id = operator.get("id")
-            app.user_name = operator.get("display_name") or operator.get("username", "")
-            app.user_role = operator.get("role", "End User")
-            app.operator_username = operator.get("username", "")
-            app.operator_email = operator.get("email", "")
-            app.operator_last_login = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            app.network_context = detect_network_context()
-            app.current_screen = "context"
-            app.render()
+            totp_secret = app.db.get_totp_secret(operator["username"])
+            if totp_secret:
+                app._pending_operator = operator
+                app.current_screen = "mfa_challenge"
+                app.render()
+            else:
+                app._complete_login(operator)
         else:
             error_msg.value = "Invalid username/email or password."
             error_msg.visible = True

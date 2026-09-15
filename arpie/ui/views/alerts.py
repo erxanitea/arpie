@@ -171,13 +171,17 @@ def render_alerts_view(app) -> ft.Column:
         sel_date = sel.get("date", today_date)
 
         def quick_seal(e, ip=sel_src):
-            app.active_blocks.append({
-                "ip": ip,
-                "type": sel_type,
-                "time": sel_time,
-                "status": "Isolated (Active Block)",
-            })
-            app.status_toast = f"Host {ip} isolated via 1-Click Seal Mode."
+            if ip and ip != "Unknown":
+                if ip not in app.active_blocks:
+                    app.active_blocks.append(ip)
+                if app.session_id and not app.seal_mgr:
+                    from ...seal import SealManager
+                    app.seal_mgr = SealManager(app.db, app.session_id)
+                if app.seal_mgr:
+                    res = app.seal_mgr.seal(ip, event_id=None, confirmed_by_user=True)
+                    app.status_toast = f"Host {ip} isolated: {res.message}"
+                else:
+                    app.status_toast = f"Host {ip} isolated via 1-Click Seal Mode."
             app.update_view_content()
             app.page.update()
 
