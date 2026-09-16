@@ -46,7 +46,8 @@ class ThreatIntelConfig:
 class AppConfig:
     app_name: str = "Arpie"
     db_path: str = os.environ.get("ARPIE_DB_PATH", "arpie.db")
-    interface: str = os.environ.get("ARPIE_IFACE", "")   # empty = auto-detect
+    interface: str = os.environ.get("ARPIE_IFACE", "")
+    export_dir: str = os.environ.get("ARPIE_EXPORT_DIR", "")
     thresholds: DetectionThresholds = field(default_factory=DetectionThresholds)
     seal: SealModeConfig = field(default_factory=SealModeConfig)
     threat_intel: ThreatIntelConfig = field(default_factory=ThreatIntelConfig)

@@ -1,7 +1,7 @@
 import tempfile
 import os
 import pytest
-from arpie.db import Database
+from arpie.models import Database
 
 
 def test_fresh_database_has_no_operators():

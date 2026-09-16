@@ -100,7 +100,11 @@ arpie/
 git clone https://github.com/<your-username>/arpie.git
 cd arpie
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+# Bash / Zsh
+source .venv/bin/activate
+# fish
+source .venv/bin/activate.fish
+# Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 

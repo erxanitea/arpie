@@ -13,7 +13,24 @@ whether that binary actually works on someone else's machine.
 
 ---
 
-## 1. Build the desktop app with `flet build`
+## 1. Run and build the desktop app
+
+Run commands from the repository root (`/home/erxanitea/Github/arpie`), not
+from the inner `arpie/` package directory. In fish, use the fish-specific
+activation script:
+
+```fish
+cd /home/erxanitea/Github/arpie
+source .venv/bin/activate.fish
+python main.py
+# Canonical module entry point:
+python -m arpie
+```
+
+For Bash or Zsh, use `source .venv/bin/activate` instead. The `activate`
+script cannot be sourced by fish.
+
+Build commands also run from the repository root:
 
 Flet 0.80+ builds native desktop bundles via Flutter. This is the supported path
 and produces the smallest, most reliable result.
@@ -37,7 +54,8 @@ Notes:
 - Bundle the `assets/` folder and `sample_pcaps/` so the logo and demo captures
   ship with the app; add them under the `assets` key in a `pyproject`/`flet`
   config or via `--include-data`, per your Flet version's docs.
-- The entry point is `main.py`; `python main.py` launches the GUI.
+- The canonical entry point is `python -m arpie`; `python main.py` remains a
+  compatibility launcher.
 
 ### Older Flet (0.24–0.7x): `flet pack`
 

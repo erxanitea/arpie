@@ -6,10 +6,10 @@ real PCAP file required, so this runs anywhere — including CI).
 from scapy.layers.l2 import Ether, ARP
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 
-from arpie.detection.arp_spoof import ArpIdentityRule
-from arpie.detection.port_scan import PortScanRule
-from arpie.detection.traffic_anomaly import TrafficRateRule
-from arpie.detection.gateway_change import GatewayChangeRule
+from arpie.middleware.detection.arp_spoof import ArpIdentityRule
+from arpie.middleware.detection.port_scan import PortScanRule
+from arpie.middleware.detection.traffic_anomaly import TrafficRateRule
+from arpie.middleware.detection.gateway_change import GatewayChangeRule
 
 
 def make_arp(psrc, hwsrc, op=2):

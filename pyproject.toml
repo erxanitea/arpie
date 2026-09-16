@@ -21,19 +21,19 @@ pythonpath = ["."]
 
 [tool.pyright]
 venvPath = "."
-venv = ".venv_arpie"
+venv = ".venv"
 extraPaths = [
     ".",
-    ".venv_arpie/lib/python3.14/site-packages",
+    ".venv/lib/python3.14/site-packages",
 ]
 
 [tool.pyrefly]
 exclude = ["__pyrefly_virtual__/**"]
 site-package-paths = [
-    ".venv_arpie/lib/python3.14/site-packages",
+    ".venv/lib/python3.14/site-packages",
 ]
 search-paths = [
     ".",
-    ".venv_arpie/lib/python3.14/site-packages",
+    ".venv/lib/python3.14/site-packages",
 ]
 

@@ -1,4 +1,4 @@
-from arpie.validation import validate_email, validate_password, password_strength
+from arpie.forms.auth import validate_email, validate_password, password_strength
 
 
 def test_email_rejects_malformed():

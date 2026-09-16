@@ -1,4 +1,4 @@
-from arpie.detection import Alert
+from arpie.middleware.detection import Alert
 from arpie.risk import score_alert, session_risk_score, risk_band
 
 

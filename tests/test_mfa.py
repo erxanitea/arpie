@@ -1,5 +1,5 @@
 import base64
-from arpie import mfa
+from arpie.middleware import mfa
 
 
 def test_rfc6238_test_vector():
