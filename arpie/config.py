@@ -1,15 +1,9 @@
-"""
-Central configuration for Arpie.
-
-All detection thresholds are configurable here (and overridable at
-runtime via the Evaluator/Administrator role in the UI).
-"""
-
 import os
 from dataclasses import dataclass, field
 
 
 @dataclass
+
 class DetectionThresholds:
     # ARP Identity Inconsistency
     arp_window_seconds: int = 300          # 5-minute window
@@ -40,8 +34,7 @@ class ThreatIntelConfig:
     ipinfo_api_key: str = field(default_factory=lambda: os.environ.get("IPINFO_API_KEY", ""))
     cache_ttl_seconds: int = 86400         # 24h local cache for reputation/geo lookups
     request_timeout_seconds: int = 5
-
-
+    
 @dataclass
 class AppConfig:
     app_name: str = "Arpie"
@@ -51,6 +44,5 @@ class AppConfig:
     thresholds: DetectionThresholds = field(default_factory=DetectionThresholds)
     seal: SealModeConfig = field(default_factory=SealModeConfig)
     threat_intel: ThreatIntelConfig = field(default_factory=ThreatIntelConfig)
-
 
 CONFIG = AppConfig()

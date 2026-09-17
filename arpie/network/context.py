@@ -1,13 +1,3 @@
-"""
-Detects the current network context: SSID, interface, gateway, and a
-trusted / public-untrusted / unknown classification.
-
-Cross-platform best-effort using psutil + platform-specific fallbacks.
-Wi-Fi SSID / security lookups differ per OS, so this degrades gracefully
-to "unknown" fields rather than raising when a platform call is
-unavailable (e.g. running inside a VM/CI without a wireless adapter).
-"""
-
 import platform
 import re
 import subprocess

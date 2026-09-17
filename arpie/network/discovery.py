@@ -1,13 +1,3 @@
-"""
-Local-network discovery helpers: resolve this endpoint's own IPv4/subnet,
-actively enumerate live hosts with an ARP sweep, and best-effort map a MAC
-to a hardware vendor.
-
-Everything here degrades gracefully: an ARP sweep needs raw-socket/root
-privileges, so callers must be ready for an empty result (returned, never
-raised) when running unprivileged or inside a VM/CI without a real adapter.
-"""
-
 import ipaddress
 import platform
 import subprocess
@@ -91,12 +81,6 @@ def _arp_table() -> dict[str, str]:
 
 
 def arp_sweep(cidr: str, iface: Optional[str] = None, timeout: int = 2) -> list[dict]:
-    """Actively enumerate live hosts on `cidr` via broadcast ARP requests.
-
-    Returns a list of {ip, mac} dicts. Requires raw-socket privileges; on
-    failure (no privileges, no adapter) it falls back to the OS ARP cache so
-    the caller still gets whatever the kernel already knows.
-    """
     results: dict[str, str] = {}
     try:
         from scapy.layers.l2 import ARP, Ether  # type: ignore[import-untyped]
