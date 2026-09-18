@@ -6,11 +6,11 @@ deterministic detection rules and collects any resulting alerts.
 import time
 from typing import List, Optional
 
-from ...models.alert import Alert
-from .arp_spoof import ArpIdentityRule
-from .port_scan import PortScanRule
-from .traffic_anomaly import TrafficRateRule
-from .gateway_change import GatewayChangeRule
+from ..models.alert import Alert
+from .rules.arp_spoof import ArpIdentityRule
+from .rules.port_scan import PortScanRule
+from .rules.traffic_anomaly import TrafficRateRule
+from .rules.gateway_change import GatewayChangeRule
 
 
 class DetectionEngine:
@@ -34,11 +34,4 @@ class DetectionEngine:
         return alerts
 
 
-__all__ = [
-    "Alert",
-    "DetectionEngine",
-    "ArpIdentityRule",
-    "PortScanRule",
-    "TrafficRateRule",
-    "GatewayChangeRule",
-]
+__all__ = ["DetectionEngine"]

@@ -1,5 +1,5 @@
 import flet as ft
-from ..components.dialogs import show_seal_dialog
+from ..templates.dialogs import show_seal_dialog
 
 
 def render_seal_view(app) -> ft.Column:

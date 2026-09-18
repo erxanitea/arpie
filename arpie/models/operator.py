@@ -27,10 +27,20 @@ class OperatorMixin(MixinBase):
                 (identifier.strip(), identifier.strip()),
             )
             row = cur.fetchone()
-            if row and row["password_hash"] == self._hash_password(password):
-                cur.execute("UPDATE operators SET last_login_at = ? WHERE id = ?", (time.time(), row["id"]))
-                return dict(row)
-            return None
+            if not row:
+                return None
+
+            valid, needs_rehash = self._verify_password(row["password_hash"], password)
+            if not valid:
+                return None
+
+            if needs_rehash:
+                cur.execute(
+                    "UPDATE operators SET password_hash = ? WHERE id = ?",
+                    (self._hash_password(password), row["id"]),
+                )
+            cur.execute("UPDATE operators SET last_login_at = ? WHERE id = ?", (time.time(), row["id"]))
+            return self._public_operator(row)
 
     def get_operator(self, identifier: str):
         with self.cursor() as cur:

@@ -1,7 +1,7 @@
 import flet as ft
 import psutil
-from ...network import detect_network_context
-from ..theme import LOGO_PATH
+from ..network import detect_network_context
+from ..templates.theme import LOGO_PATH
 
 
 def _make_detail_row(icon, label: str, val: str) -> ft.Container:

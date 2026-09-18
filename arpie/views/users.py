@@ -1,7 +1,7 @@
 import datetime
 import time
 import flet as ft
-from ...admin import can_manage_operators
+from ..admin import can_manage_operators
 
 
 def _make_role_filter_chip(app, label: str) -> ft.Container:

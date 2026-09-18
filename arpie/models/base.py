@@ -1,8 +1,20 @@
+import base64
 import hashlib
+import hmac
+import secrets
 import sqlite3
 import time
 from contextlib import contextmanager
 from pathlib import Path
+
+
+# scrypt "interactive login" parameters (RFC 7914): ~16 MB and ~30 ms per
+# derivation, which is cheap for a desktop login and expensive to attack in bulk.
+_SCRYPT_N = 2 ** 14
+_SCRYPT_R = 8
+_SCRYPT_P = 1
+_SALT_BYTES = 16
+_DK_LEN = 32
 
 
 SCHEMA = """
@@ -118,4 +130,60 @@ class DatabaseBase:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        return hashlib.sha256(password.encode("utf-8")).hexdigest()
+        """Derive a salted scrypt hash, stored as ``scrypt$N$r$p$salt_b64$key_b64``."""
+        salt = secrets.token_bytes(_SALT_BYTES)
+        key = hashlib.scrypt(
+            password.encode("utf-8"),
+            salt=salt,
+            n=_SCRYPT_N,
+            r=_SCRYPT_R,
+            p=_SCRYPT_P,
+            dklen=_DK_LEN,
+        )
+        return "scrypt${}${}${}${}${}".format(
+            _SCRYPT_N,
+            _SCRYPT_R,
+            _SCRYPT_P,
+            base64.b64encode(salt).decode("ascii"),
+            base64.b64encode(key).decode("ascii"),
+        )
+
+    @staticmethod
+    def _verify_password(stored: str, password: str) -> tuple[bool, bool]:
+        """Return ``(is_valid, needs_rehash)`` for a stored password hash.
+
+        Accounts created before salted hashing carry a bare SHA-256 hex digest.
+        Those still verify, but are flagged so the caller can transparently
+        re-hash them with the current scheme on a successful login.
+        """
+        stored = (stored or "").strip()
+        if not stored:
+            return False, False
+
+        if stored.startswith("scrypt$"):
+            try:
+                _, n_s, r_s, p_s, salt_b64, key_b64 = stored.split("$")
+                expected = base64.b64decode(salt_b64), base64.b64decode(key_b64)
+                key = hashlib.scrypt(
+                    password.encode("utf-8"),
+                    salt=expected[0],
+                    n=int(n_s),
+                    r=int(r_s),
+                    p=int(p_s),
+                    dklen=len(expected[1]),
+                )
+            except (ValueError, TypeError):
+                return False, False
+            return hmac.compare_digest(key, expected[1]), False
+
+        legacy = hashlib.sha256(password.encode("utf-8")).hexdigest()
+        ok = hmac.compare_digest(stored, legacy)
+        return ok, ok
+
+    @staticmethod
+    def _public_operator(row) -> dict:
+        """Strip credential material before an operator row enters app state."""
+        operator = dict(row)
+        operator.pop("password_hash", None)
+        operator.pop("recovery_codes", None)
+        return operator

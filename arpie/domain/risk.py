@@ -10,7 +10,7 @@ justify to a non-technical end user than a classifier's probability.
 
 from typing import List, Optional
 
-from ..middleware.detection import Alert
+from ..models.alert import Alert
 from ..integrations import IpEnrichment
 
 

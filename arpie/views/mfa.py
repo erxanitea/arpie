@@ -1,5 +1,5 @@
 import flet as ft
-from ..theme import LOGO_PATH
+from ..templates.theme import LOGO_PATH
 
 
 def render_mfa_challenge_screen(app) -> ft.Container:

@@ -1,7 +1,7 @@
 import datetime
 import threading
 import flet as ft
-from ...network import arp_sweep, mac_vendor, local_ipv4_and_cidr
+from ..network import arp_sweep, mac_vendor, local_ipv4_and_cidr
 
 
 def render_inventory_view(app) -> ft.Column:

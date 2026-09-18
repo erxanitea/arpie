@@ -1,6 +1,6 @@
 import datetime
 import flet as ft
-from ..theme import LOGO_PATH
+from ..templates.theme import LOGO_PATH
 
 
 def render_login_screen(app) -> ft.Container:

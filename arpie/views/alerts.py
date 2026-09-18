@@ -1,6 +1,6 @@
 import datetime
 import flet as ft
-from ..components.cards import make_filter_chip
+from ..templates.components.cards import make_filter_chip
 
 
 def render_alerts_view(app) -> ft.Column:
@@ -156,7 +156,7 @@ def render_alerts_view(app) -> ft.Column:
                 if ip not in app.active_blocks:
                     app.active_blocks.append(ip)
                 if app.session_id and not app.seal_mgr:
-                    from ...security import SealManager
+                    from ..security import SealManager
                     app.seal_mgr = SealManager(app.db, app.session_id)
                 if app.seal_mgr:
                     res = app.seal_mgr.seal(ip, event_id=None, confirmed_by_user=True)
@@ -166,7 +166,7 @@ def render_alerts_view(app) -> ft.Column:
             app.update_view_content()
             app.page.update()
 
-        from ..components.evidence_drawer import build_evidence_drawer
+        from ..templates.components.evidence_drawer import build_evidence_drawer
         evidence_drawer = build_evidence_drawer(app, sel, close_drawer, quick_seal)
         main_content = ft.Row([table_card, evidence_drawer], spacing=14, vertical_alignment=ft.CrossAxisAlignment.START)
     else:

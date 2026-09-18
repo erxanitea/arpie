@@ -1,8 +1,8 @@
 import flet as ft
-from ...admin import can_manage_system_settings
-from ...forms.auth import validate_password
-from ...security import secrets_store
-from ...middleware.mfa import provisioning_uri
+from ..admin import can_manage_system_settings
+from ..forms.auth import validate_password
+from ..security import secrets_store
+from ..middleware.mfa import provisioning_uri
 from .profile import _make_param_field
 
 
@@ -150,11 +150,11 @@ def render_settings_view(app) -> ft.Column:
         app.page.update()
 
     def _on_setup_click(e):
-        from ..components.dialogs import show_mfa_setup_dialog
+        from ..templates.dialogs import show_mfa_setup_dialog
         show_mfa_setup_dialog(app, on_success=_refresh_mfa)
 
     def _on_disable_click(e):
-        from ..components.dialogs import show_mfa_disable_dialog
+        from ..templates.dialogs import show_mfa_disable_dialog
         show_mfa_disable_dialog(app, on_success=_refresh_mfa)
 
     mfa_card = ft.Container(

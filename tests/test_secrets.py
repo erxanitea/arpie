@@ -1,7 +1,7 @@
 """Secret storage must degrade gracefully when no OS keyring backend exists
 (headless server / CI), never raising and never falling back to plaintext."""
 
-from arpie import secrets_store
+from arpie.security import secrets_store
 
 
 def test_secret_ops_never_raise_without_backend():

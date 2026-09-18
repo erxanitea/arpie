@@ -31,3 +31,36 @@ jobs:
 
       - name: Run test suite
         run: pytest tests/ -v
+
+  layering:
+    name: Architecture boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The UI toolkit must not leak below the presentation layer. This is what
+      # keeps controllers and domain logic testable without a Flet page.
+      # See docs/ARCHITECTURE.md ("The one rule that makes this an architecture").
+      - name: No flet imports below the UI layer
+        run: |
+          if grep -rn --include='*.py' -E '^[[:space:]]*(import flet|from flet)' \
+               arpie/controllers arpie/models arpie/domain arpie/detection \
+               arpie/network arpie/security arpie/integrations arpie/forms \
+               arpie/middleware arpie/infrastructure arpie/reporting arpie/admin; then
+            echo "::error::flet imported below the UI layer — see docs/ARCHITECTURE.md"
+            exit 1
+          fi
+          echo "OK: no flet imports below the UI layer"
+
+      # Views render and delegate; they must not open the database directly.
+      # Non-blocking until migration Phase 5 moves the remaining calls into
+      # controllers, at which point drop continue-on-error to make this binding.
+      - name: No direct database access from the presentation layer (advisory)
+        continue-on-error: true
+        run: |
+          if grep -rn --include='*.py' -E '\bdb\.[a-z_]+\(' arpie/views arpie/templates; then
+            echo "::warning::presentation layer still reaches the database directly; \
+            Phase 5 of docs/ARCHITECTURE.md moves these into controllers"
+            exit 1
+          fi
+          echo "OK: no direct database access from the presentation layer"

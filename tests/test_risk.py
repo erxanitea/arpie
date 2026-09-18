@@ -1,5 +1,5 @@
-from arpie.middleware.detection import Alert
-from arpie.risk import score_alert, session_risk_score, risk_band
+from arpie.detection import Alert
+from arpie.domain.risk import score_alert, session_risk_score, risk_band
 
 
 def test_score_alert_within_bounds():

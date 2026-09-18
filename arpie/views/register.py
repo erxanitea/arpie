@@ -1,8 +1,8 @@
 import datetime
 import flet as ft
-from ...network import detect_network_context
-from ...forms.auth import validate_email, validate_password, password_strength
-from ..theme import LOGO_PATH
+from ..network import detect_network_context
+from ..forms.auth import validate_email, validate_password, password_strength
+from ..templates.theme import LOGO_PATH
 
 
 def render_register_screen(app) -> ft.Container:

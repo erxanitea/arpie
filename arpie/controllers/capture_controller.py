@@ -1,9 +1,9 @@
 from pathlib import Path
 import threading
 
-from ..capture import PcapReplay
+from ..infrastructure.capture import PcapReplay
 from ..config import CONFIG
-from ..middleware.detection import DetectionEngine
+from ..detection import DetectionEngine
 from ..network import detect_network_context
 
 

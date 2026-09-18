@@ -1,7 +1,7 @@
 """Network-context classification (Objective 1): trusted / public-untrusted /
 unknown, driven by the user-confirmed trusted-SSID list."""
 
-from arpie.network_context import classify_network
+from arpie.network.context import classify_network
 
 
 def test_no_ssid_is_unknown():

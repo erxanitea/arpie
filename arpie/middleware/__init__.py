@@ -1,3 +1,11 @@
+"""
+Middleware — cross-cutting security concerns applied at controller entry:
+role policy, session validity, and multi-factor authentication.
+
+The packet detection pipeline lives in ``arpie.detection``; it is core domain,
+not a cross-cutting concern.
+"""
+
 from .auth import (
     is_evaluator,
     require_role,
@@ -16,13 +24,6 @@ from .mfa import (
     provisioning_uri,
     generate_recovery_codes,
     generate_qr_base64,
-)
-from .detection import (
-    DetectionEngine,
-    ArpIdentityRule,
-    PortScanRule,
-    TrafficRateRule,
-    GatewayChangeRule,
 )
 
 __all__ = [

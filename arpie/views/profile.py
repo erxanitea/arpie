@@ -1,5 +1,5 @@
 import flet as ft
-from ..theme import LOGO_PATH
+from ..templates.theme import LOGO_PATH
 
 
 def _make_rule_switch(app, label: str, icon, rule_key: str) -> ft.Container:

@@ -8,10 +8,10 @@ from typing import Optional
 
 import flet as ft
 
-from ..capture import LiveCapture
+from ..infrastructure.capture import LiveCapture
 from ..config import CONFIG
 from ..models import Database
-from ..middleware.detection import Alert, DetectionEngine
+from ..detection import Alert, DetectionEngine
 from ..network import detect_network_context
 from ..infrastructure import send_desktop_notification
 from ..reporting import build_report_data, export_html, export_json, export_pdf
@@ -22,19 +22,19 @@ from ..controllers import AuthController, CaptureController, ReportController, S
 from .components.sidebar import build_sidebar
 from .components.topbar import build_topbar
 from .theme import SEVERITY_BG, SEVERITY_COLORS
-from .views.alerts import render_alerts_view
-from .views.context import render_context_screen
-from .views.dashboard import render_dashboard_view
-from .views.inventory import render_inventory_view
-from .views.login import render_login_screen
-from .views.mfa import render_mfa_challenge_screen
-from .views.packets import render_packets_view
-from .views.profile import render_profile_screen
-from .views.register import render_register_screen
-from .views.reports import render_reports_view
-from .views.seal import render_seal_view
-from .views.settings import render_settings_view
-from .views.users import render_users_view
+from ..views.alerts import render_alerts_view
+from ..views.context import render_context_screen
+from ..views.dashboard import render_dashboard_view
+from ..views.inventory import render_inventory_view
+from ..views.login import render_login_screen
+from ..views.mfa import render_mfa_challenge_screen
+from ..views.packets import render_packets_view
+from ..views.profile import render_profile_screen
+from ..views.register import render_register_screen
+from ..views.reports import render_reports_view
+from ..views.seal import render_seal_view
+from ..views.settings import render_settings_view
+from ..views.users import render_users_view
 
 
 class ArpieApp:
@@ -420,7 +420,7 @@ class ArpieApp:
             slot = getattr(self, "dashboard_chart_slot", None)
             if slot and getattr(slot, "page", None):
                 try:
-                    from .views.dashboard import _build_spline_chart_content
+                    from ..views.dashboard import _build_spline_chart_content
                     slot.content = _build_spline_chart_content(self)
                     slot.update()
                     return
@@ -819,7 +819,7 @@ class ArpieApp:
                         slot = getattr(self, "dashboard_chart_slot", None)
                         if slot and getattr(slot, "page", None):
                             try:
-                                from .views.dashboard import _build_spline_chart_content
+                                from ..views.dashboard import _build_spline_chart_content
                                 slot.content = _build_spline_chart_content(self)
                                 slot.update()
                             except Exception:

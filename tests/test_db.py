@@ -58,3 +58,90 @@ def test_setup_admin_and_end_user_lifecycle():
     finally:
         if os.path.exists(db_path):
             os.remove(db_path)
+
+
+def test_passwords_are_salted_and_never_stored_in_plain_digest_form():
+    """Two operators sharing a password must not share a stored hash, and no
+    stored hash may be a bare SHA-256 digest (unsalted, single round)."""
+    import hashlib
+    import sqlite3
+
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    try:
+        db = Database(db_path)
+        db.create_operator("alice", "alice@univ.edu", "sharedPass123")
+        db.create_operator("bob", "bob@univ.edu", "sharedPass123")
+
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT username, password_hash FROM operators").fetchall()
+        conn.close()
+
+        hashes = {r["username"]: r["password_hash"] for r in rows}
+        assert hashes["alice"] != hashes["bob"], "identical passwords produced identical hashes"
+
+        legacy = hashlib.sha256(b"sharedPass123").hexdigest()
+        for stored in hashes.values():
+            assert stored != legacy
+            assert stored.startswith("scrypt$")
+
+        assert db.authenticate_operator("alice", "sharedPass123") is not None
+        assert db.authenticate_operator("bob", "sharedPass123") is not None
+        assert db.authenticate_operator("alice", "sharedPass124") is None
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+
+def test_legacy_sha256_account_authenticates_then_upgrades():
+    """Accounts written by the pre-salt scheme must keep working and be
+    transparently re-hashed on the next successful login."""
+    import hashlib
+    import sqlite3
+
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    try:
+        db = Database(db_path)
+        db.create_operator("legacy_user", "legacy@univ.edu", "placeholder")
+
+        # Rewrite the row the way the old _hash_password would have stored it.
+        legacy = hashlib.sha256("oldPassword1".encode("utf-8")).hexdigest()
+        conn = sqlite3.connect(db_path)
+        conn.execute("UPDATE operators SET password_hash = ? WHERE username = ?", (legacy, "legacy_user"))
+        conn.commit()
+        conn.close()
+
+        assert db.authenticate_operator("legacy_user", "wrongpass") is None
+        assert db.authenticate_operator("legacy_user", "oldPassword1") is not None
+
+        conn = sqlite3.connect(db_path)
+        upgraded = conn.execute(
+            "SELECT password_hash FROM operators WHERE username = ?", ("legacy_user",)
+        ).fetchone()[0]
+        conn.close()
+        assert upgraded.startswith("scrypt$"), "legacy hash was not upgraded on login"
+
+        assert db.authenticate_operator("legacy_user", "oldPassword1") is not None
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+
+def test_authenticate_does_not_leak_credential_material():
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    try:
+        db = Database(db_path)
+        db.create_operator("carol", "carol@univ.edu", "carolPass123")
+        db.set_recovery_codes("carol", ["AAAA-BBBB", "CCCC-DDDD"])
+
+        operator = db.authenticate_operator("carol", "carolPass123")
+        assert operator is not None
+        assert "password_hash" not in operator
+        assert "recovery_codes" not in operator
+        assert operator["username"] == "carol"
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)

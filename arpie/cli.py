@@ -8,9 +8,9 @@ os.environ["GTK_A11Y"] = "none"
 os.environ["GDK_DEBUG"] = "misc"
 os.environ["G_MESSAGES_DEBUG"] = ""
 
-from .capture import PcapReplay
+from .infrastructure.capture import PcapReplay
 from .config import CONFIG
-from .middleware.detection import DetectionEngine
+from .detection import DetectionEngine
 from .models import Database
 from .network import detect_network_context
 from .domain import risk_band, score_alert, session_risk_score

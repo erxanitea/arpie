@@ -1,6 +1,6 @@
 import flet as ft
 from pathlib import Path
-from ...admin import can_manage_operators
+from ..admin import can_manage_operators
 
 
 def render_packets_view(app) -> ft.Column:

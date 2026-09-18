@@ -29,70 +29,39 @@ reversible, user-confirmed "Seal Mode" to block a suspicious host.
 
 ```
 arpie/
-├── main.py                        # entry point (GUI or --pcap CLI mode)
-├── requirements.txt
-├── pyproject.toml
-├── LICENSE
+├── main.py                  # packaging entry point (flet pack / pyinstaller)
 ├── arpie/
-│   ├── config.py                  # thresholds, Seal Mode, threat-intel config
-│   ├── db.py                      # SQLite schema + storage
-│   ├── network_context.py         # SSID / gateway / classification
-│   ├── capture.py                 # live sniff + PCAP replay
-│   ├── discovery.py               # local-network host enumeration (ARP sweep)
-│   ├── mfa.py                     # TOTP two-factor authentication (RFC 6238)
-│   ├── secrets_store.py           # OS keyring-backed API-key storage
-│   ├── validation.py              # input validation (email, password strength)
-│   ├── detection/
-│   │   ├── __init__.py            # DetectionEngine orchestrator
-│   │   ├── alert.py               # Alert dataclass
-│   │   ├── arp_spoof.py
-│   │   ├── port_scan.py
-│   │   ├── traffic_anomaly.py
-│   │   └── gateway_change.py
-│   ├── threat_intel.py            # AbuseIPDB + IPinfo Lite + caching
-│   ├── risk.py                    # transparent heuristic scoring (0–100)
-│   ├── seal.py                    # firewall block/unblock + audit log
-│   ├── report.py                  # JSON/HTML/PDF export
-│   ├── notification.py            # cross-platform desktop OS notifications
-│   └── ui/
-│       ├── app.py                 # main app shell & page routing
-│       ├── theme.py               # colour / style tokens
-│       ├── components/
-│       │   ├── sidebar.py
-│       │   ├── topbar.py
-│       │   └── dialogs.py
-│       └── views/
-│           ├── login.py           # auth: login
-│           ├── register.py        # auth: registration
-│           ├── mfa.py             # two-factor challenge screen
-│           ├── dashboard.py       # live session overview
-│           ├── alerts.py          # alert timeline & details
-│           ├── context.py         # network-context panel
-│           ├── inventory.py       # host inventory
-│           ├── packets.py         # packet inspector
-│           ├── seal.py            # Seal Mode controls
-│           ├── reports.py         # report export
-│           ├── settings.py        # app settings
-│           ├── profile.py         # user profile
-│           └── users.py           # user management
-├── tests/
-│   ├── conftest.py
-│   ├── test_detection.py
-│   ├── test_risk.py
-│   ├── test_db.py
-│   ├── test_context.py
-│   ├── test_mfa.py
-│   ├── test_secrets.py
-│   └── test_validation.py
-├── tools/
-│   ├── generate_demo_pcap.py      # synthetic PCAP generator
-│   └── simulate_attack.py         # attack simulation scripts
-├── lab/                           # Vagrant lab environment
-├── sample_pcaps/                  # demo PCAP files for testing
-├── assets/                        # logo and documentation PDFs
-├── docs/                          # architecture specs & diagrams
-└── .github/workflows/             # CI & release automation
+│   ├── __main__.py          # canonical entry: python -m arpie
+│   ├── cli.py               # headless --pcap mode, or launch the desktop UI
+│   ├── config/              # Configuration — settings + detection thresholds
+│   ├── models/              # Models — entities and the only SQL in the codebase
+│   ├── controllers/         # Controllers — workflow orchestration
+│   ├── views/               # Views — one module per screen
+│   ├── templates/           # Templates — app shell, theme, components, dialogs
+│   ├── forms/               # Forms — pure input validators
+│   ├── admin/               # Admin — privileged-operator policy
+│   ├── middleware/          # Middleware — roles, sessions, MFA
+│   ├── detection/           # the four NIDS rules + engine (core domain)
+│   ├── domain/              # pure business rules (risk scoring)
+│   ├── network/             # context classification, ARP sweep
+│   ├── security/            # Seal Mode, OS keyring
+│   ├── integrations/        # AbuseIPDB / IPinfo enrichment
+│   ├── infrastructure/      # packet capture, desktop notifications
+│   ├── reporting/           # JSON / HTML / PDF export
+│   └── seeder/              # demo fixtures
+├── tests/                   # pytest suite
+├── tools/                   # PCAP generator, attack simulation
+├── lab/                     # Vagrant lab environment
+├── sample_pcaps/            # demo PCAP files
+├── assets/                  # logo and documentation PDFs
+├── docs/                    # architecture, security, packaging, demo
+└── .github/workflows/       # CI & release automation
 ```
+
+See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for what each layer
+owns and how it maps onto the Django structural layers, and
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the target state and remaining
+migration phases.
 
 ## Setup
 

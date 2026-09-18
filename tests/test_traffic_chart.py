@@ -1,6 +1,6 @@
 import unittest
-from arpie.templates.views.dashboard import _build_spline_chart
-from arpie.templates.views.inventory import render_inventory_view
+from arpie.views.dashboard import _build_spline_chart
+from arpie.views.inventory import render_inventory_view
 
 
 class DummyApp:
