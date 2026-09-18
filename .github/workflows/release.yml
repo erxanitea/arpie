@@ -38,7 +38,7 @@ jobs:
           cache: pip
 
       - name: Set up Flutter (required by `flet build`)
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
 
@@ -65,7 +65,7 @@ jobs:
           fi
 
       - name: Upload to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             arpie-${{ matrix.target }}.zip

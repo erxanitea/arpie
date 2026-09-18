@@ -1,4 +1,4 @@
-from ..security import SealManager
+from arpie.security import SealManager
 
 
 class SealController:

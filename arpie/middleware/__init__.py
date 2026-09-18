@@ -6,17 +6,19 @@ The packet detection pipeline lives in ``arpie.detection``; it is core domain,
 not a cross-cutting concern.
 """
 
-from .auth import (
+from arpie.middleware.auth import (
     is_evaluator,
     require_role,
     require_evaluator,
     is_authenticated,
     check_session_valid,
+    can_manage_operators,
+    can_manage_system_settings,
     ROLE_EVALUATOR,
     ROLE_END_USER,
     VALID_ROLES,
 )
-from .mfa import (
+from arpie.middleware.mfa import (
     available as mfa_available,
     generate_secret,
     totp,
@@ -32,6 +34,8 @@ __all__ = [
     "require_evaluator",
     "is_authenticated",
     "check_session_valid",
+    "can_manage_operators",
+    "can_manage_system_settings",
     "ROLE_EVALUATOR",
     "ROLE_END_USER",
     "VALID_ROLES",

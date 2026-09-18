@@ -20,7 +20,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from ..models import Database
+from arpie.models import Database
 
 
 RULE_NAME_PREFIX = "Arpie_Seal_"

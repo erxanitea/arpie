@@ -1,5 +1,5 @@
 import flet as ft
-from ..templates.dialogs import show_seal_dialog
+from arpie.views.dialogs import show_seal_dialog
 
 
 def render_seal_view(app) -> ft.Column:
@@ -32,7 +32,7 @@ def render_seal_view(app) -> ft.Column:
                         ft.Text("Endpoint Seal Mode Threat Mitigation", size=20, weight=ft.FontWeight.BOLD, color="#0F172A"),
                         ft.Text("Automated and reversible host isolation using iptables/netsh.", size=13, color="#64748B"),
                     ], spacing=2),
-                    ft.ElevatedButton(
+                    ft.Button(
                         content=ft.Row([
                             ft.Icon(ft.Icons.LOCK_ROUNDED, color="#FFFFFF", size=18),
                             ft.Text("Activate Emergency Seal", size=13, weight=ft.FontWeight.BOLD, color="#FFFFFF"),

@@ -8,13 +8,13 @@ os.environ["GTK_A11Y"] = "none"
 os.environ["GDK_DEBUG"] = "misc"
 os.environ["G_MESSAGES_DEBUG"] = ""
 
-from .infrastructure.capture import PcapReplay
-from .config import CONFIG
-from .detection import DetectionEngine
-from .models import Database
-from .network import detect_network_context
-from .domain import risk_band, score_alert, session_risk_score
-from .integrations import ThreatIntelClient
+from arpie.infrastructure.capture import PcapReplay
+from arpie.config import CONFIG
+from arpie.detection import DetectionEngine
+from arpie.models import Database
+from arpie.network import detect_network_context
+from arpie.detection import risk_band, score_alert, session_risk_score
+from arpie.infrastructure.threat_intel import ThreatIntelClient
 
 
 def run_cli_pcap(path: str, gateway_ip: str | None = None):
@@ -36,7 +36,7 @@ def run_cli_pcap(path: str, gateway_ip: str | None = None):
             score = score_alert(alert, enrichment)
             db.log_event(session_id, alert.detection_type, alert.source_ip, alert.target,
                          alert.severity, alert.confidence, score, alert.evidence,
-                         alert.recommended_action)
+                         alert.recommended_action, ts=alert.ts)
             print(json.dumps({
                 "type": alert.detection_type,
                 "source": alert.source_ip,
@@ -55,8 +55,9 @@ def run_cli_pcap(path: str, gateway_ip: str | None = None):
 
 
 def run_gui():
-    from .templates import run
-    run()
+    from arpie.views.app import ArpieApp
+    import flet as ft
+    ft.run(lambda page: ArpieApp(page), view=ft.AppView.FLET_APP)
 
 
 def main():

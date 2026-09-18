@@ -1,4 +1,4 @@
-from ._typing import MixinBase
+from arpie.models._typing import MixinBase
 
 
 class ConfigMixin(MixinBase):

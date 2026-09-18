@@ -1,8 +1,8 @@
 import argparse
 import sys
-from ..config import CONFIG
-from ..models import Database
-from .service import is_seeded, seed_database, unseed_database
+from arpie.config import CONFIG
+from arpie.models import Database
+from arpie.seeder.service import is_seeded, seed_database, unseed_database
 
 
 def main():

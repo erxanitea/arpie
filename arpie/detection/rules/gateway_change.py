@@ -6,12 +6,12 @@ within a 10-minute (configurable) window — a strong signal of default
 route hijacking / rogue gateway attacks.
 """
 
-import time
 from collections import deque
 from typing import Optional
 
 from scapy.layers.l2 import ARP
-from ...models.alert import Alert
+from arpie.models.alert import Alert
+from arpie.detection.timebase import observed_at
 
 
 class GatewayChangeRule:
@@ -26,14 +26,15 @@ class GatewayChangeRule:
     def set_gateway_ip(self, gateway_ip: str):
         self.gateway_ip = gateway_ip
 
-    def inspect(self, packet):
+    def inspect(self, packet, now: float | None = None):
         if not self.gateway_ip or not packet.haslayer(ARP):
             return None
         arp = packet[ARP]
         if arp.psrc != self.gateway_ip:
             return None
 
-        now = time.time()
+        if now is None:
+            now = observed_at(packet)
         new_mac = arp.hwsrc
 
         if self._current_mac is None:

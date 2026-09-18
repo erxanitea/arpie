@@ -1,8 +1,8 @@
 import datetime
 import flet as ft
-from ..network import detect_network_context
-from ..forms.auth import validate_email, validate_password, password_strength
-from ..templates.theme import LOGO_PATH
+from arpie.network import detect_network_context
+from arpie.forms.auth import validate_email, validate_password, password_strength
+from arpie.views.theme import LOGO_PATH
 
 
 def render_register_screen(app) -> ft.Container:
@@ -244,7 +244,7 @@ def render_register_screen(app) -> ft.Container:
             confirm_pw_field,
         ], spacing=3, tight=True),
         ft.Container(height=4),
-        ft.ElevatedButton(
+        ft.Button(
             content=ft.Row([
                 ft.Icon(top_icon, color="#FFFFFF", size=16),
                 ft.Text(btn_text, size=14, weight=ft.FontWeight.BOLD, color="#FFFFFF"),

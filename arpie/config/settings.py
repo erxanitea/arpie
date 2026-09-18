@@ -8,7 +8,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .thresholds import DetectionThresholds, SealModeConfig, ThreatIntelConfig
+from arpie.config.thresholds import DetectionThresholds, SealModeConfig, ThreatIntelConfig
 
 
 @dataclass

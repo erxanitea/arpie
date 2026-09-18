@@ -1,20 +1,21 @@
 """
-Detection layer — the deterministic heuristics that make Arpie an NIDS.
-
-Promoted out of ``middleware`` because a packet pipeline is not a cross-cutting
-request concern: these four rules are the product's core domain.
+Detection layer — deterministic heuristics and heuristic risk scoring.
 """
 
-from ..models.alert import Alert
-from .engine import DetectionEngine
-from .rules.arp_spoof import ArpIdentityRule
-from .rules.port_scan import PortScanRule
-from .rules.traffic_anomaly import TrafficRateRule
-from .rules.gateway_change import GatewayChangeRule
+from arpie.models.alert import Alert
+from arpie.detection.engine import DetectionEngine
+from arpie.detection.risk import risk_band, score_alert, session_risk_score
+from arpie.detection.rules.arp_spoof import ArpIdentityRule
+from arpie.detection.rules.port_scan import PortScanRule
+from arpie.detection.rules.traffic_anomaly import TrafficRateRule
+from arpie.detection.rules.gateway_change import GatewayChangeRule
 
 __all__ = [
     "Alert",
     "DetectionEngine",
+    "risk_band",
+    "score_alert",
+    "session_risk_score",
     "ArpIdentityRule",
     "PortScanRule",
     "TrafficRateRule",

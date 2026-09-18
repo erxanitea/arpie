@@ -1,10 +1,10 @@
 from pathlib import Path
 import threading
 
-from ..infrastructure.capture import PcapReplay
-from ..config import CONFIG
-from ..detection import DetectionEngine
-from ..network import detect_network_context
+from arpie.infrastructure.capture import PcapReplay
+from arpie.config import CONFIG
+from arpie.detection import DetectionEngine
+from arpie.network import detect_network_context
 
 
 class CaptureController:

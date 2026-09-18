@@ -1,19 +1,27 @@
 import json
 import time
 
-from ._typing import MixinBase
+from arpie.models._typing import MixinBase
 
 
 class EventMixin(MixinBase):
 
     def log_event(self, session_id, detection_type, source_ip, target, severity,
-                   confidence, risk_score, evidence: dict, recommended_action=""):
+                   confidence, risk_score, evidence: dict, recommended_action="", ts=None):
+        """Record a detection event.
+
+        `ts` is when the traffic was *observed* (``Alert.ts``). Callers should pass
+        it so a replayed capture is filed under the original incident time rather
+        than the time the replay happened to run. It defaults to now for callers
+        with no captured packet behind them, such as the demo seeder.
+        """
         with self.cursor() as cur:
             cur.execute(
                 "INSERT INTO events (session_id, ts, detection_type, source_ip, target, "
                 "severity, confidence, risk_score, evidence_json, recommended_action, status) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (session_id, time.time(), detection_type, source_ip, target, severity,
+                (session_id, time.time() if ts is None else float(ts), detection_type,
+                 source_ip, target, severity,
                  confidence, risk_score, json.dumps(evidence), recommended_action, "NEW"),
             )
             return cur.lastrowid

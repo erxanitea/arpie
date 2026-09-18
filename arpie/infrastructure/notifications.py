@@ -28,16 +28,20 @@ def send_desktop_notification(title: str, message: str, severity: str = "critica
 
         elif current_os == "Windows":
             # PowerShell balloon notification
+            safe_title = title.replace("'", "''")
+            safe_message = message.replace("'", "''")
             ps_script = f"""
             [reflection.assembly]::loadwithpartialname('System.Windows.Forms') | Out-Null
             $notify = new-object system.windows.forms.notifyicon
             $notify.icon = [system.drawing.systemicons]::Information
             $notify.visible = $true
-            $notify.showballoontip(10, '{title}', '{message}', [system.windows.forms.tooltipicon]::Warning)
+            $notify.showballoontip(10, '{safe_title}', '{safe_message}', [system.windows.forms.tooltipicon]::Warning)
             """
             subprocess.Popen(["powershell", "-Command", ps_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         elif current_os == "Darwin": # macOS
-            apple_script = f'display notification "{message}" with title "{title}" subtitle "Arpie Threat Response"'
+            safe_title = title.replace("\\", "\\\\").replace('"', '\\"')
+            safe_message = message.replace("\\", "\\\\").replace('"', '\\"')
+            apple_script = f'display notification "{safe_message}" with title "{safe_title}" subtitle "Arpie Threat Response"'
             subprocess.Popen(["osascript", "-e", apple_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass  # Never crash the NIDS engine if notification delivery fails

@@ -1,21 +1,42 @@
+# Bytecode and Cache
 __pycache__/
-*.pyc
-*.pyo
-*.db
-*.spec
-build/
-dist/
-*.egg-info/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual Environments
 .venv/
 .venv_arpie/
 venv/
-.pytest_cache/
+env/
+
+# Distribution and Packaging
+build/
+dist/
+*.egg-info/
+*.egg
+*.spec
+
+# Local Runtime Data and Reports
+*.db
+*.sqlite3
 arpie_session_*.json
 arpie_session_*.html
 arpie_session_*.pdf
-.env
 
-# Workspace dependency symlinks for IDE resolution
+# Secrets and Local Environment
+.env
+.env.*.local
+
+# IDEs and OS Metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Workspace Dependency Symlinks
 /scapy
 /psutil
 /flet
@@ -25,3 +46,11 @@ arpie_session_*.pdf
 /netifaces
 tests/scapy
 arpie/scapy
+
+# AI and Agent Tooling
+.gemini/
+.claude/
+.cursor/
+.agents/**/scratch/
+.agents/**/logs/
+.agents/**/*.log

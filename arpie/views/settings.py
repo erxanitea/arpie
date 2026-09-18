@@ -1,9 +1,9 @@
 import flet as ft
-from ..admin import can_manage_system_settings
-from ..forms.auth import validate_password
-from ..security import secrets_store
-from ..middleware.mfa import provisioning_uri
-from .profile import _make_param_field
+from arpie.middleware import can_manage_system_settings
+from arpie.forms.auth import validate_password
+from arpie.security import secrets_store
+from arpie.middleware.mfa import provisioning_uri
+from arpie.views.profile import _make_param_field
 
 
 def render_settings_view(app) -> ft.Column:
@@ -123,7 +123,7 @@ def render_settings_view(app) -> ft.Column:
                 ft.Container(content=new_pw_field, expand=1),
             ], spacing=12),
             op_status_text,
-            ft.ElevatedButton(
+            ft.Button(
                 "Update Credentials",
                 icon=ft.Icons.CHECK_ROUNDED,
                 on_click=on_update_credentials,
@@ -150,11 +150,11 @@ def render_settings_view(app) -> ft.Column:
         app.page.update()
 
     def _on_setup_click(e):
-        from ..templates.dialogs import show_mfa_setup_dialog
+        from arpie.views.dialogs import show_mfa_setup_dialog
         show_mfa_setup_dialog(app, on_success=_refresh_mfa)
 
     def _on_disable_click(e):
-        from ..templates.dialogs import show_mfa_disable_dialog
+        from arpie.views.dialogs import show_mfa_disable_dialog
         show_mfa_disable_dialog(app, on_success=_refresh_mfa)
 
     mfa_card = ft.Container(
@@ -171,7 +171,7 @@ def render_settings_view(app) -> ft.Column:
                 ft.Text("Status:", size=13, color="#475569"),
                 totp_status,
             ], spacing=8),
-            ft.ElevatedButton(
+            ft.Button(
                 "Disable 2FA" if has_totp else "Set Up 2FA",
                 icon=ft.Icons.LOCK_OPEN_ROUNDED if has_totp else ft.Icons.LOCK_ROUNDED,
                 on_click=_on_disable_click if has_totp else _on_setup_click,
@@ -249,7 +249,7 @@ def render_settings_view(app) -> ft.Column:
                 _make_param_field(app, "ARP Identity Window", app.thresholds.get("arp_window", "5"), "minutes", "arp_window"),
                 _make_param_field(app, "Gateway Change Window", app.thresholds.get("gw_window", "10"), "minutes", "gw_window"),
                 ft.Container(height=4),
-                ft.ElevatedButton("Save Detection Settings", icon=ft.Icons.SAVE_ROUNDED, on_click=save_conf, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF", padding=12)),
+                ft.Button("Save Detection Settings", icon=ft.Icons.SAVE_ROUNDED, on_click=save_conf, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF", padding=12)),
             ], spacing=12),
             bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=20,
         )

@@ -1,7 +1,7 @@
 import datetime
 import time
 import flet as ft
-from ..admin import can_manage_operators
+from arpie.middleware import can_manage_operators
 
 
 def _make_role_filter_chip(app, label: str) -> ft.Container:
@@ -58,7 +58,7 @@ def render_users_view(app) -> ft.Column:
                     ft.Text("Administrator Privileges Required", size=18, weight=ft.FontWeight.BOLD, color="#0F172A"),
                     ft.Text("User management and RBAC directory access is restricted to Evaluator / Administrator accounts.", size=13, color="#64748B", text_align=ft.TextAlign.CENTER),
                     ft.Container(height=8),
-                    ft.ElevatedButton("Return to Dashboard", icon=ft.Icons.DASHBOARD_ROUNDED, on_click=lambda e: app.nav_to("dashboard"), style=ft.ButtonStyle(bgcolor="#0F172A", color="#FFFFFF", padding=12)),
+                    ft.Button("Return to Dashboard", icon=ft.Icons.DASHBOARD_ROUNDED, on_click=lambda e: app.nav_to("dashboard"), style=ft.ButtonStyle(bgcolor="#0F172A", color="#FFFFFF", padding=12)),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
                 bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=40,
                 alignment=ft.Alignment(0, 0),

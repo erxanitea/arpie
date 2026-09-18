@@ -131,7 +131,7 @@ def render_reports_view(app) -> ft.Column:
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Row([
                 dir_input,
-                ft.ElevatedButton(
+                ft.Button(
                     "Browse Folder",
                     icon=ft.Icons.FOLDER_OPEN_ROUNDED,
                     tooltip="Open file explorer to select destination folder",
@@ -164,7 +164,7 @@ def render_reports_view(app) -> ft.Column:
                 status_widget,
                 export_dir_widget,
                 ft.Row([
-                    ft.ElevatedButton(
+                    ft.Button(
                         "Export Active PDF",
                         icon=ft.Icons.PICTURE_AS_PDF_ROUNDED,
                         on_click=lambda e: export_fmt("pdf"),

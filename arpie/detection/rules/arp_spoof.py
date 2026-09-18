@@ -6,11 +6,11 @@ within a 5-minute (configurable) window. This is the classic ARP
 spoofing / MITM signature.
 """
 
-import time
 from collections import defaultdict
 
 from scapy.layers.l2 import ARP
-from ...models.alert import Alert
+from arpie.models.alert import Alert
+from arpie.detection.timebase import observed_at
 
 
 class ArpIdentityRule:
@@ -28,7 +28,7 @@ class ArpIdentityRule:
             if now - macs[mac] > self.window:
                 del macs[mac]
 
-    def inspect(self, packet):
+    def inspect(self, packet, now: float | None = None):
         if not packet.haslayer(ARP):
             return None
         arp = packet[ARP]
@@ -39,7 +39,8 @@ class ArpIdentityRule:
         if not ip or not mac or ip == "0.0.0.0":
             return None
 
-        now = time.time()
+        if now is None:
+            now = observed_at(packet)
         self._prune(ip, now)
         self._ip_macs[ip][mac] = now
 

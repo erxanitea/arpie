@@ -1,5 +1,5 @@
 import flet as ft
-from ..templates.theme import LOGO_PATH
+from arpie.views.theme import LOGO_PATH
 
 
 def render_mfa_challenge_screen(app) -> ft.Container:
@@ -110,7 +110,7 @@ def render_mfa_challenge_screen(app) -> ft.Container:
             error_msg,
             code_field,
             ft.Container(height=2),
-            ft.ElevatedButton(
+            ft.Button(
                 content=ft.Row([
                     ft.Icon(ft.Icons.VERIFIED_USER_ROUNDED, color="#FFFFFF", size=16),
                     verify_btn_text,

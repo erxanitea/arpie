@@ -272,6 +272,18 @@ Phases 3–6 are what make the word "Controllers" true.
 
 ---
 
+## 7b. Decided and done: time as an input
+
+`adr/0001-detection-time-is-an-input.md` records the first change made on this
+architecture's terms rather than the rubric's. Detection rules no longer read the
+wall clock; the engine resolves each packet's capture timestamp once and passes it
+in, and `events.ts` now stores the observation time.
+
+It is listed here because it is the template for the rest: the defect was not a
+misplaced file, it was an ambient dependency inside the core. Folder moves could
+not have found it, and renaming nothing would have fixed it. Phases 3–6 below are
+worth doing; this class of fix is worth doing first.
+
 ## 8. Deliberate deviations from Django
 
 Stated up front so they read as decisions, not gaps.

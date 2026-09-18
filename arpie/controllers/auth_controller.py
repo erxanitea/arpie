@@ -1,7 +1,7 @@
 import datetime
 
-from ..middleware.mfa import verify as mfa_verify
-from ..network import detect_network_context
+from arpie.middleware.mfa import verify as mfa_verify
+from arpie.network import detect_network_context
 
 
 class AuthController:

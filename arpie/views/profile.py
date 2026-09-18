@@ -1,5 +1,5 @@
 import flet as ft
-from ..templates.theme import LOGO_PATH
+from arpie.views.theme import LOGO_PATH
 
 
 def _make_rule_switch(app, label: str, icon, rule_key: str) -> ft.Container:
@@ -173,7 +173,7 @@ def render_profile_screen(app) -> ft.Container:
             ft.Container(height=10),
             ft.Row([
                 ft.OutlinedButton("← Back to Context", on_click=lambda e: app.go_to_context()),
-                ft.ElevatedButton(
+                ft.Button(
                     content=ft.Row([
                         ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED, color="#FFFFFF", size=18),
                         ft.Text("Start Monitoring", size=14, weight=ft.FontWeight.BOLD, color="#FFFFFF"),

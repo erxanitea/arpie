@@ -1,7 +1,7 @@
 import datetime
 import threading
 import flet as ft
-from ..network import arp_sweep, mac_vendor, local_ipv4_and_cidr
+from arpie.network import arp_sweep, mac_vendor, local_ipv4_and_cidr
 
 
 def render_inventory_view(app) -> ft.Column:
@@ -170,7 +170,7 @@ def render_inventory_view(app) -> ft.Column:
                         ft.Text(f"Tracking {len(app.devices_inventory)} discovered active endpoints on subnet", size=11, color="#64748B"),
                     ], spacing=1),
                 ], spacing=8),
-                ft.ElevatedButton("Scan Local Subnet", icon=ft.Icons.REFRESH_ROUNDED, on_click=do_scan, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF", padding=10)),
+                ft.Button("Scan Local Subnet", icon=ft.Icons.REFRESH_ROUNDED, on_click=do_scan, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF", padding=10)),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Row([scan_spinner, scan_status], spacing=8, visible=True),
             ft.Divider(color="#E2E8F0", height=12),

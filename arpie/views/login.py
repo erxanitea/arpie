@@ -1,6 +1,6 @@
 import datetime
 import flet as ft
-from ..templates.theme import LOGO_PATH
+from arpie.views.theme import LOGO_PATH
 
 
 def render_login_screen(app) -> ft.Container:
@@ -124,7 +124,7 @@ def render_login_screen(app) -> ft.Container:
                 password_field,
             ], spacing=4, tight=True),
             ft.Container(height=4),
-            ft.ElevatedButton(
+            ft.Button(
                 content=ft.Row([
                     ft.Icon(ft.Icons.LOGIN_ROUNDED, color="#FFFFFF", size=16),
                     ft.Text("Sign In", size=14, weight=ft.FontWeight.BOLD, color="#FFFFFF"),

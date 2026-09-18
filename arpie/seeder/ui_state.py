@@ -2,8 +2,8 @@
 
 import time
 
-from .fixtures import REALISTIC_DEVICES, REALISTIC_SAMPLE_PACKETS
-from .service import is_seeded, seed_database, unseed_database
+from arpie.seeder.fixtures import REALISTIC_DEVICES, REALISTIC_SAMPLE_PACKETS
+from arpie.seeder.service import is_seeded, seed_database, unseed_database
 
 
 def seed_active_app_state(app):

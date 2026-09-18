@@ -5,11 +5,11 @@ Trigger: more than 15 (configurable) unique destination ports contacted
 by one source within a 10-second (configurable) window.
 """
 
-import time
 from collections import defaultdict
 
 from scapy.layers.inet import IP, TCP, UDP
-from ...models.alert import Alert
+from arpie.models.alert import Alert
+from arpie.detection.timebase import observed_at
 
 
 class PortScanRule:
@@ -26,7 +26,7 @@ class PortScanRule:
             if now - contacts[key] > self.window:
                 del contacts[key]
 
-    def inspect(self, packet):
+    def inspect(self, packet, now: float | None = None):
         if not packet.haslayer(IP):
             return None
         if not (packet.haslayer(TCP) or packet.haslayer(UDP)):
@@ -37,7 +37,8 @@ class PortScanRule:
         dst_ip = ip_layer.dst
         dst_port = packet[TCP].dport if packet.haslayer(TCP) else packet[UDP].dport
 
-        now = time.time()
+        if now is None:
+            now = observed_at(packet)
         self._prune(src_ip, now)
         self._contacts[src_ip][(dst_ip, dst_port)] = now
 

@@ -2,8 +2,8 @@ import json
 import random
 import time
 from typing import Optional
-from ..models import Database
-from .fixtures import REALISTIC_DEVICES, REALISTIC_SAMPLE_PACKETS
+from arpie.models import Database
+from arpie.seeder.fixtures import REALISTIC_DEVICES, REALISTIC_SAMPLE_PACKETS
 
 
 SEEDED_SOURCE = "seeder"
@@ -354,7 +354,7 @@ def seed_active_app_state(app):
 
 
 def clear_active_app_state(app):
-    res = unseed_database(app.db, app=app)
+    res = unseed_database(app.db)
     app._ip_packet_counts.clear()
     app._rebuild_top_talkers()
     app.status_toast = f"Cleared all seeded evaluation data ({res['removed_sessions']} audit sessions purged)."

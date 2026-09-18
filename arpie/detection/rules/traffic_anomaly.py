@@ -6,11 +6,11 @@ Trigger: SYN/UDP/ICMP packets from one source exceeding 100 packets/sec
 ICMP floods.
 """
 
-import time
 from collections import defaultdict, deque
 
 from scapy.layers.inet import IP, TCP, UDP, ICMP
-from ...models.alert import Alert
+from arpie.models.alert import Alert
+from arpie.detection.timebase import observed_at
 
 
 class TrafficRateRule:
@@ -30,12 +30,13 @@ class TrafficRateRule:
             return True
         return False
 
-    def inspect(self, packet):
+    def inspect(self, packet, now: float | None = None):
         if not packet.haslayer(IP) or not self._is_relevant(packet):
             return None
 
         src_ip = packet[IP].src
-        now = time.time()
+        if now is None:
+            now = observed_at(packet)
         dq = self._timestamps[src_ip]
         dq.append(now)
         while dq and now - dq[0] > self.window:

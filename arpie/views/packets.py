@@ -1,6 +1,6 @@
 import flet as ft
 from pathlib import Path
-from ..admin import can_manage_operators
+from arpie.middleware import can_manage_operators
 
 
 def render_packets_view(app) -> ft.Column:
@@ -61,8 +61,8 @@ def render_packets_view(app) -> ft.Column:
             ], spacing=8),
             ft.Row([
                 pcap_input,
-                ft.ElevatedButton("Run Demo Capture", icon=ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, on_click=run_demo, style=ft.ButtonStyle(bgcolor="#0F766E", color="#FFFFFF")),
-                ft.ElevatedButton("Replay PCAP File", icon=ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, on_click=do_replay, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF")),
+                ft.Button("Run Demo Capture", icon=ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, on_click=run_demo, style=ft.ButtonStyle(bgcolor="#0F766E", color="#FFFFFF")),
+                ft.Button("Replay PCAP File", icon=ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, on_click=do_replay, style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF")),
             ], spacing=12),
             ft.Divider(color="#E2E8F0", height=16),
         ])

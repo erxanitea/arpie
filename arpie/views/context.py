@@ -1,7 +1,7 @@
 import flet as ft
 import psutil
-from ..network import detect_network_context
-from ..templates.theme import LOGO_PATH
+from arpie.network import detect_network_context
+from arpie.views.theme import LOGO_PATH
 
 
 def _make_detail_row(icon, label: str, val: str) -> ft.Container:
@@ -209,7 +209,7 @@ def render_context_screen(app) -> ft.Container:
                     ft.Icon(ft.Icons.LOCK_OUTLINE_ROUNDED, size=14, color="#94A3B8"),
                     ft.Text("Local monitoring enabled · v1.0.0", size=12, color="#94A3B8"),
                 ], spacing=6),
-                ft.ElevatedButton(
+                ft.Button(
                     content=ft.Row([
                         ft.Text("Continue to Monitoring", size=14, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
                         ft.Icon(ft.Icons.ARROW_FORWARD_ROUNDED, color="#FFFFFF", size=16),
