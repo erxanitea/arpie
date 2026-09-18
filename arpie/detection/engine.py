@@ -18,14 +18,24 @@ from arpie.detection.rules.gateway_change import GatewayChangeRule
 
 
 class DetectionEngine:
-    def __init__(self, thresholds, gateway_ip: Optional[str] = None, clock: Optional[Clock] = None):
+    RULE_KEYS = ("arp", "port_scan", "traffic_rate", "gateway")
+
+    def __init__(
+        self,
+        thresholds,
+        gateway_ip: Optional[str] = None,
+        clock: Optional[Clock] = None,
+        enabled: Optional[dict] = None,
+    ):
         self.clock = clock
-        self.rules = [
-            ArpIdentityRule(thresholds),
-            PortScanRule(thresholds),
-            TrafficRateRule(thresholds),
-            GatewayChangeRule(thresholds, gateway_ip=gateway_ip),
-        ]
+        enabled = enabled or {}
+        builders = {
+            "arp": lambda: ArpIdentityRule(thresholds),
+            "port_scan": lambda: PortScanRule(thresholds),
+            "traffic_rate": lambda: TrafficRateRule(thresholds),
+            "gateway": lambda: GatewayChangeRule(thresholds, gateway_ip=gateway_ip),
+        }
+        self.rules = [build() for key, build in builders.items() if enabled.get(key, True)]
 
     def process(self, packet, now: Optional[float] = None) -> List[Alert]:
         if now is None:

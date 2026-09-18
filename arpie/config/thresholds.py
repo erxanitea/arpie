@@ -6,7 +6,49 @@ by whoever is calibrating false-positive rates, not by whoever installs the app.
 """
 
 import os
+import platform
 from dataclasses import dataclass, field
+from pathlib import Path
+
+
+def user_data_dir() -> str:
+    """Per-OS writable data directory for Arpie's database and reports, so a
+    packaged/double-clicked binary never writes into an arbitrary CWD.
+
+    - Windows: %APPDATA%\\Arpie
+    - macOS:   ~/Library/Application Support/Arpie
+    - Linux:   $XDG_DATA_HOME/arpie or ~/.local/share/arpie
+    """
+    override = os.environ.get("ARPIE_DATA_DIR")
+    if override:
+        base = Path(override)
+    else:
+        system = platform.system()
+        if system == "Windows":
+            base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / "Arpie"
+        elif system == "Darwin":
+            base = Path.home() / "Library" / "Application Support" / "Arpie"
+        else:
+            xdg = os.environ.get("XDG_DATA_HOME")
+            base = (Path(xdg) if xdg else Path.home() / ".local" / "share") / "arpie"
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        base = Path.cwd()
+    return str(base)
+
+
+def _default_db_path() -> str:
+    return os.environ.get("ARPIE_DB_PATH") or os.path.join(user_data_dir(), "arpie.db")
+
+
+def reports_dir() -> str:
+    d = os.path.join(user_data_dir(), "reports")
+    try:
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        d = os.getcwd()
+    return d
 
 
 @dataclass

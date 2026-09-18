@@ -47,6 +47,8 @@ def render_alerts_view(app) -> ft.Column:
         fgc = alert_item.get("fg", "#DC2626")
         bgc = alert_item.get("bg", "#FEE2E2")
         ev_desc = alert_item.get("desc", "")
+        conf = alert_item.get("confidence")
+        conf_str = f"{int(conf * 100)}%" if isinstance(conf, (int, float)) else "—"
 
         if app.active_severity_filter != "All" and sev.lower() != app.active_severity_filter.lower():
             continue
@@ -81,7 +83,7 @@ def render_alerts_view(app) -> ft.Column:
                     ft.DataCell(ft.Text(src, size=12, weight=ft.FontWeight.W_600, color="#0F172A")),
                     ft.DataCell(ft.Text(target, size=12, color="#475569")),
                     ft.DataCell(ft.Container(
-                        content=ft.Text("100%", size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
+                        content=ft.Text(conf_str, size=10, weight=ft.FontWeight.BOLD, color="#0284C7"),
                         bgcolor="#E0F2FE", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                     )),
                     ft.DataCell(ft.Container(

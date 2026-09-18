@@ -50,6 +50,7 @@ class SealManager:
             notes=result.message,
         )
         if result.success:
+            self.db.record_seal(target_ip, self.session_id, reason=result.message)
             timer = threading.Timer(self.auto_restore_seconds, self.unseal, args=[target_ip, event_id, False])
             timer.daemon = True
             timer.start()
@@ -63,6 +64,7 @@ class SealManager:
             self.session_id, event_id, action="unseal", target=target_ip,
             confirmed_by_user=confirmed_by_user, notes=note,
         )
+        self.db.clear_seal(target_ip)
         timer = self._sealed_targets.pop(target_ip, None)
         if timer:
             timer.cancel()
@@ -122,3 +124,21 @@ class SealManager:
             return SealResult(True, f"Restored connectivity to {target_ip}.")
         except Exception as e:
             return SealResult(False, f"Failed to unseal {target_ip}: {e}")
+
+
+def reconcile_orphaned_seals(db: Database) -> list[str]:
+    """Clear firewall rules left behind by a previous run.
+
+    Auto-restore is an in-process timer, so a crash/kill leaves the block in
+    place with nothing to reverse it. On startup we remove those rules and mark
+    them cleared — a stranded self-block is worse than briefly re-exposing a
+    host whose alert history is still on record. Returns the restored targets.
+    """
+    restored: list[str] = []
+    mgr = SealManager(db, session_id=0)
+    for row in db.get_active_seals():
+        target = row["target"]
+        mgr._remove_block(target)
+        db.clear_seal(target)
+        restored.append(target)
+    return restored

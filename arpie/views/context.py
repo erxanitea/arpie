@@ -20,7 +20,7 @@ def _make_detail_row(icon, label: str, val: str) -> ft.Container:
 
 def render_context_screen(app) -> ft.Container:
     if not app.network_context:
-        app.network_context = detect_network_context()
+        app.refresh_network_context()
 
     ssid = app.network_context.ssid or "Unknown Network"
     gateway = app.network_context.gateway_ip or "Unknown"
@@ -101,21 +101,18 @@ def render_context_screen(app) -> ft.Container:
                 padding=10, border=ft.Border.all(1, "#E2E8F0"), border_radius=8,
             ),
         ], spacing=10),
-        value=init_rg_val,
+        value={"trusted": "trusted", "public-untrusted": "public"}.get(cl, "unknown"),
+    )
+
+    already_trusted = bool(app.network_context.ssid) and app.network_context.ssid in app.get_trusted_ssids()
+    remember_cb = ft.Checkbox(
+        label="Remember this network as trusted for next time",
+        value=already_trusted,
+        active_color="#10B981",
     )
 
     def on_continue(e):
-        sel_val = classification_rg.value
-        if sel_val and app.network_context:
-            if sel_val == "public":
-                app.network_context.classification = "public-untrusted"
-                app.selected_profile = "Public Wi-Fi"
-            elif sel_val == "trusted":
-                app.network_context.classification = "trusted"
-                app.selected_profile = "Balanced"
-            elif sel_val == "unknown":
-                app.network_context.classification = "unknown"
-                app.selected_profile = "Custom"
+        app.apply_classification(classification_rg.value or "public", remember=bool(remember_cb.value))
         app.current_screen = "profile"
         app.render()
 
@@ -172,7 +169,13 @@ def render_context_screen(app) -> ft.Container:
                 ft.Container(
                     content=ft.Row([
                         ft.Icon(ft.Icons.INFO_OUTLINE_ROUNDED, color="#64748B", size=16),
-                        ft.Text("Why? This network appears to be a shared/public environment.", size=12, color="#475569"),
+                        ft.Text(
+                            "Why? This SSID is on your trusted list — reduced sensitivity applied."
+                            if cl == "trusted" else
+                            "Why? SSID could not be determined, so context is uncertain."
+                            if cl == "unknown" else
+                            "Why? This network is not on your trusted list — treated as public/shared.",
+                            size=12, color="#475569"),
                     ], spacing=8),
                     bgcolor="#FFFFFF", padding=10, border_radius=8, border=ft.Border.all(1, "#E2E8F0"),
                 )
@@ -185,6 +188,8 @@ def render_context_screen(app) -> ft.Container:
                 ft.Text("Confirm or override the detected context.", size=12, color="#64748B"),
                 ft.Container(height=6),
                 classification_rg,
+                ft.Container(height=2),
+                remember_cb,
             ], spacing=8),
             bgcolor="#FFFFFF", padding=20, border_radius=14, border=ft.Border.all(1, "#E2E8F0"),
         )

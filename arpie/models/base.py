@@ -86,6 +86,14 @@ CREATE TABLE IF NOT EXISTS operator_config (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS seals (
+    target TEXT PRIMARY KEY,
+    sealed_at REAL NOT NULL,
+    session_id INTEGER,
+    reason TEXT,
+    active INTEGER NOT NULL DEFAULT 1
+);
 """
 
 
@@ -102,7 +110,8 @@ class DatabaseBase:
         return conn
 
     def _init_schema(self):
-        with self._connect() as conn:
+        conn = self._connect()
+        try:
             conn.executescript(SCHEMA)
             cur = conn.cursor()
             cur.execute("PRAGMA table_info(operators)")
@@ -117,6 +126,8 @@ class DatabaseBase:
             if "operator_id" not in s_cols:
                 conn.execute("ALTER TABLE sessions ADD COLUMN operator_id INTEGER")
             conn.commit()
+        finally:
+            conn.close()
 
     @contextmanager
     def cursor(self):

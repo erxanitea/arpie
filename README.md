@@ -27,7 +27,6 @@ reversible, user-confirmed "Seal Mode" to block a suspicious host.
 
 ## Project layout
 
-```
 arpie/
 ├── main.py                  # packaging entry point (flet pack / pyinstaller)
 ├── arpie/
@@ -36,20 +35,15 @@ arpie/
 │   ├── config/              # Configuration — settings + detection thresholds
 │   ├── models/              # Models — entities and the only SQL in the codebase
 │   ├── controllers/         # Controllers — workflow orchestration
-│   ├── views/               # Views — one module per screen
-│   ├── templates/           # Templates — app shell, theme, components, dialogs
+│   ├── views/               # Views, components, dialogs, and mixins
 │   ├── forms/               # Forms — pure input validators
-│   ├── admin/               # Admin — privileged-operator policy
 │   ├── middleware/          # Middleware — roles, sessions, MFA
-│   ├── detection/           # the four NIDS rules + engine (core domain)
-│   ├── domain/              # pure business rules (risk scoring)
-│   ├── network/             # context classification, ARP sweep
+│   ├── detection/           # the four NIDS rules + engine + risk scoring
+│   ├── network/             # context classification, discovery, ARP sweep
 │   ├── security/            # Seal Mode, OS keyring
-│   ├── integrations/        # AbuseIPDB / IPinfo enrichment
-│   ├── infrastructure/      # packet capture, desktop notifications
-│   ├── reporting/           # JSON / HTML / PDF export
+│   ├── infrastructure/      # packet capture, threat intel, report generation
 │   └── seeder/              # demo fixtures
-├── tests/                   # pytest suite
+├── tests/                   # parallel pytest suite
 ├── tools/                   # PCAP generator, attack simulation
 ├── lab/                     # Vagrant lab environment
 ├── sample_pcaps/            # demo PCAP files
@@ -108,6 +102,20 @@ python main.py
 python main.py --pcap sample_pcaps/your_capture.pcap
 ```
 
+### Live two-device demo
+
+To see Arpie detect a **real** attacker device on the same network — the full
+presentation flow, including which IP the attacker targets and how to respond
+with Seal Mode — follow **[docs/DEMO.md](docs/DEMO.md)**. No second device on
+hand? The **Engine Self-Test** button and PCAP replay drive the identical
+detection pipeline.
+
+> **Scope, stated honestly:** Arpie is an *endpoint* IDS — a layer-2 trust
+> monitor (ARP/gateway) plus a detector for scans/floods **aimed at this host**.
+> On modern WPA2/WPA3 Wi-Fi an endpoint cannot see other clients' encrypted
+> traffic, and Arpie does not pretend to. Every alert, device, and metric in the
+> UI reflects real observation.
+
 ## Testing
 
 ```bash
@@ -153,29 +161,13 @@ The session-level score aggregates all alerts:
 | 25–49 | 🟡 Medium |
 | 0–24 | 🟢 Low |
 
-## Building the standalone `.exe`
+## Building a downloadable binary
 
-PyInstaller is already in `requirements.txt`. From the project root, on
-a **Windows machine** (build the `.exe` on the OS you're targeting):
-
-```bash
-pyinstaller --name Arpie --onefile --windowed ^
-  --add-data "arpie;arpie" ^
-  main.py
-```
-
-- `--onefile` bundles everything into a single `Arpie.exe` in `dist/`
-- `--windowed` suppresses the console window for the GUI (drop this flag if you want console output for debugging)
-- On Linux/macOS, use `--add-data "arpie:arpie"` (colon instead of semicolon) to build platform-native equivalents
-
-The finished executable will be at `dist/Arpie.exe`. Since Scapy needs
-packet-capture drivers, make sure **Npcap** (https://npcap.com/) is
-installed on the target Windows machine — it's a runtime dependency of
-Scapy on Windows, not something PyInstaller can bundle.
-
-For a GitHub Release, zip `dist/Arpie.exe` alongside a short `README`
-and attach it to a tagged release rather than committing the binary
-into the repo.
+The GUI is a Flet app; the modern Flet build path (`flet build <os>`), the
+headless-CLI PyInstaller path, and the runtime prerequisites (elevation, Npcap
+on Windows, code signing, privacy) are all documented in
+**[docs/PACKAGING.md](docs/PACKAGING.md)**. Prefer attaching built binaries to a
+tagged GitHub Release over committing them to the repo.
 
 ## Notes on design choices
 
@@ -198,3 +190,8 @@ For the comprehensive system architecture diagram, component specifications, and
 - [PlantUML Architecture Diagram](docs/system_architecture.puml)
 
 
+
+## License
+
+[MIT](LICENSE). The bundled attack simulator is for authorized testing of
+networks you own or are permitted to test.
