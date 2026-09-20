@@ -13,6 +13,12 @@ def build_evidence_drawer(app, alert_item: dict, on_close, on_seal) -> ft.Contai
     sel_bg = alert_item.get("bg", "#FEE2E2")
     sel_time = alert_item.get("time", "")
     sel_date = alert_item.get("date", today_date)
+    confidence = alert_item.get("confidence")
+    confidence_text = f"{float(confidence) * 100:.0f}%" if isinstance(confidence, (int, float)) else "N/A"
+    enrichment = getattr(app, "enrichments", {}).get(sel_src)
+    abuse_score = getattr(enrichment, "abuse_confidence_score", None) if enrichment else None
+    country = getattr(enrichment, "country", None) if enrichment else None
+    asn = getattr(enrichment, "asn", None) if enrichment else None
 
     return ft.Container(
         content=ft.Column([
@@ -55,7 +61,7 @@ def build_evidence_drawer(app, alert_item: dict, on_close, on_seal) -> ft.Contai
                 ft.Row([
                     ft.Column([
                         ft.Text("Heuristic Certainty", size=10, color="#64748B", weight=ft.FontWeight.BOLD),
-                        ft.Text("100% Deterministic", size=12, weight=ft.FontWeight.BOLD, color="#0284C7"),
+                        ft.Text(f"{confidence_text} rule confidence", size=12, weight=ft.FontWeight.BOLD, color="#0284C7"),
                     ], spacing=2, expand=1),
                     ft.Column([
                         ft.Text("Triage Status", size=10, color="#64748B", weight=ft.FontWeight.BOLD),
@@ -74,7 +80,7 @@ def build_evidence_drawer(app, alert_item: dict, on_close, on_seal) -> ft.Contai
                         ft.Text("Abuse Confidence Score:", size=11, color="#64748B"),
                         ft.Container(
                             content=ft.Text(
-                                "98% Malicious" if "192.168.1.50" in sel_src or "192.168.1.1" in sel_src else "Clean (0%)",
+                                f"{abuse_score}% reported abuse" if abuse_score is not None else "N/A — local or unavailable",
                                 size=10, weight=ft.FontWeight.BOLD, color="#DC2626",
                             ),
                             bgcolor="#FEE2E2", border_radius=4, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
@@ -82,7 +88,10 @@ def build_evidence_drawer(app, alert_item: dict, on_close, on_seal) -> ft.Contai
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ft.Row([
                         ft.Text("Autonomous System:", size=11, color="#64748B"),
-                        ft.Text("AS13335 (Cloudflare / Local)", size=11, weight=ft.FontWeight.W_500, color="#0F172A"),
+                        ft.Text(
+                            " · ".join(value for value in (asn, country) if value) or "N/A — local or unavailable",
+                            size=11, weight=ft.FontWeight.W_500, color="#0F172A",
+                        ),
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ], spacing=6),
                 bgcolor="#F8FAFC", border=ft.Border.all(1, "#E2E8F0"), border_radius=8, padding=10,

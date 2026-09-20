@@ -34,7 +34,10 @@ class CaptureController:
             source=resolved_path,
             operator_id=self.app.operator_id,
         )
-        self.app.engine = DetectionEngine(CONFIG.thresholds, gateway_ip=ctx.gateway_ip)
+        if hasattr(self.app, "_configured_detection_engine"):
+            self.app.engine = self.app._configured_detection_engine(gateway_ip=ctx.gateway_ip)
+        else:
+            self.app.engine = DetectionEngine(CONFIG.thresholds, gateway_ip=ctx.gateway_ip)
 
         replay = PcapReplay(resolved_path, self.app._process_packet)
         threading.Thread(target=replay.run, daemon=True).start()

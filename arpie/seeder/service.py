@@ -1,10 +1,9 @@
 import json
 import random
 import time
-from typing import Optional
+
 from arpie.models import Database
 from arpie.seeder.fixtures import REALISTIC_DEVICES, REALISTIC_SAMPLE_PACKETS
-
 
 SEEDED_SOURCE = "seeder"
 
@@ -18,21 +17,16 @@ def is_seeded(db: Database) -> bool:
         return bool(row and row["cnt"] > 0)
 
 
-def seed_database(db: Database, operator_id: Optional[int] = None, user_identifier: Optional[str] = "eradumangcas7@gmail.com") -> dict:
+def seed_database(db: Database, operator_id: int | None = None, user_identifier: str | None = "eradumangcas7@gmail.com") -> dict:
     if operator_id is None and user_identifier:
-        op = db.get_operator(user_identifier)
-        if op:
+        if op := db.get_operator(user_identifier):
             operator_id = op["id"]
-        else:
-            ops = db.list_operators()
-            if ops:
-                operator_id = ops[0]["id"]
+        elif ops := db.list_operators():
+            operator_id = ops[0]["id"]
 
     unseed_database(db)
 
     now = time.time()
-    seeded_sessions = []
-    seeded_events = []
 
     s1_start = now - 600
     s1_id = db.start_session(
@@ -115,8 +109,8 @@ def seed_database(db: Database, operator_id: Optional[int] = None, user_identifi
     with db.cursor() as cur:
         cur.execute("UPDATE events SET ts = ? WHERE id = ?", (s1_start + 650, e3))
 
-    seeded_sessions.append(s1_id)
-    seeded_events.extend([e1, e2, e3])
+    seeded_sessions = [s1_id]
+    seeded_events = [e1, e2, e3]
 
     s2_start = now - 18000
     s2_id = db.start_session(
@@ -183,9 +177,7 @@ def seed_database(db: Database, operator_id: Optional[int] = None, user_identifi
 
     db.set_config("snapshot_devices", json.dumps(REALISTIC_DEVICES))
     db.set_config("snapshot_packets", "14250")
-    packet_log_snapshot = []
-    for index, packet in enumerate(REALISTIC_SAMPLE_PACKETS):
-        packet_log_snapshot.append({
+    packet_log_snapshot = [{
             "ts": time.strftime("%H:%M:%S", time.localtime(now - (len(REALISTIC_SAMPLE_PACKETS) - index) * 3)),
             "src": packet[0],
             "dst": packet[1],
@@ -193,7 +185,7 @@ def seed_database(db: Database, operator_id: Optional[int] = None, user_identifi
             "src_mac": packet[3],
             "dst_mac": packet[4],
             "len": packet[5],
-        })
+        } for index, packet in enumerate(REALISTIC_SAMPLE_PACKETS)]
     db.set_config("snapshot_packet_log", json.dumps(packet_log_snapshot))
     db.set_config("snapshot_traffic", json.dumps([18, 24, 32, 45, 98, 142, 110, 65, 40, 28, 35, 42]))
     db.set_config("snapshot_top_talkers", json.dumps([
@@ -219,10 +211,10 @@ def unseed_database(db: Database) -> dict:
         sids = [r["id"] for r in cur.fetchall()]
 
         if sids:
-            placeholders = ",".join("?" for _ in sids)
-            cur.execute(f"DELETE FROM actions WHERE session_id IN ({placeholders})", sids)
-            cur.execute(f"DELETE FROM events WHERE session_id IN ({placeholders})", sids)
-            cur.execute(f"DELETE FROM sessions WHERE source = ?", (SEEDED_SOURCE,))
+            for session_id in sids:
+                cur.execute("DELETE FROM actions WHERE session_id = ?", (session_id,))
+                cur.execute("DELETE FROM events WHERE session_id = ?", (session_id,))
+            cur.execute("DELETE FROM sessions WHERE source = ?", (SEEDED_SOURCE,))
 
         cur.execute("DELETE FROM threat_intel_cache WHERE ip IN ('185.220.101.5', '45.33.32.156')")
 

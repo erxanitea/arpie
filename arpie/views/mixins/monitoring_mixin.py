@@ -2,6 +2,8 @@ import asyncio
 import datetime
 import threading
 import time
+from contextlib import suppress
+from dataclasses import replace
 
 from arpie.config import CONFIG
 from arpie.detection import DetectionEngine
@@ -16,19 +18,37 @@ from arpie.views.mixins._typing import MixinBase
 class MonitoringMixin(MixinBase):
     """Live packet capture: ingestion, passive device discovery, and the timer loop."""
 
+    def _configured_detection_engine(self, gateway_ip=None):
+        def configured_int(key: str, fallback: int) -> int:
+            try:
+                return max(1, int(self.thresholds.get(key, fallback)))
+            except (TypeError, ValueError):
+                return fallback
+
+        thresholds = replace(
+            CONFIG.thresholds,
+            traffic_rate_pps_threshold=configured_int("traffic", CONFIG.thresholds.traffic_rate_pps_threshold),
+            port_scan_unique_ports=configured_int("port", CONFIG.thresholds.port_scan_unique_ports),
+            arp_window_seconds=configured_int("arp_window", CONFIG.thresholds.arp_window_seconds // 60) * 60,
+            gateway_window_seconds=configured_int("gw_window", CONFIG.thresholds.gateway_window_seconds // 60) * 60,
+        )
+        return DetectionEngine(
+            thresholds,
+            gateway_ip=gateway_ip,
+            enabled=getattr(self, "detection_rules", None),
+        )
+
     def set_traffic_interval(self, sec: int):
         self.traffic_interval_sec = max(1, sec)
         self._tick_counter = 0
         if self.current_view == "dashboard":
             slot = getattr(self, "dashboard_chart_slot", None)
             if slot and getattr(slot, "page", None):
-                try:
+                with suppress(Exception):
                     from arpie.views.components.traffic_chart import build_spline_chart_content as _build_spline_chart_content
                     slot.content = _build_spline_chart_content(self)
                     slot.update()
                     return
-                except Exception:
-                    pass
             self.update_view_content()
             if self.page:
                 self.page.update()
@@ -44,7 +64,7 @@ class MonitoringMixin(MixinBase):
         dst_mac = "Unknown"
         pkt_len = str(len(packet))
 
-        try:
+        with suppress(Exception):
             if hasattr(packet, "src"):
                 src_mac = str(packet.src)
             if hasattr(packet, "dst"):
@@ -91,17 +111,18 @@ class MonitoringMixin(MixinBase):
             self._rebuild_top_talkers()
 
             self._passive_discover_device(src_ip, src_mac)
-        except Exception:
-            pass
-
         if self.engine:
             for alert in self.engine.process(packet):
+                self.alerts.append(alert)
                 self._current_interval_suspicious += 1
                 alert_dict = {
                     "time": datetime.datetime.now().strftime("%H:%M:%S"),
                     "type": alert.detection_type.replace("_", " ").title(),
                     "severity": alert.severity.upper(),
                     "source": alert.source_ip or src_ip or "Unknown",
+                    "target": alert.target or dst_ip or "Unknown",
+                    "confidence": alert.confidence,
+                    "date": datetime.datetime.fromtimestamp(alert.ts).strftime("%Y-%m-%d"),
                     "status": "NEW",
                     "fg": SEVERITY_COLORS.get(alert.severity.lower(), "#DC2626"),
                     "bg": SEVERITY_BG.get(alert.severity.lower(), "#FEE2E2"),
@@ -202,12 +223,12 @@ class MonitoringMixin(MixinBase):
         ctx = detect_network_context()
         self.network_context = ctx
         self.session_id = self.db.start_session(ctx.ssid, ctx.classification, ctx.interface, source="live", operator_id=self.operator_id)
-        self.engine = DetectionEngine(CONFIG.thresholds, gateway_ip=ctx.gateway_ip)
+        self.engine = self._configured_detection_engine(gateway_ip=ctx.gateway_ip)
 
         threading.Thread(target=self._initial_arp_sweep, args=(ctx,), daemon=True).start()
 
         if not self.live_capture:
-            self.live_capture = LiveCapture(interface=ctx.interface or "wlan0", on_packet=self._process_packet)
+            self.live_capture = LiveCapture(interface=ctx.interface, on_packet=self._process_packet)
             self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
             self.capture_thread.start()
 
@@ -215,7 +236,7 @@ class MonitoringMixin(MixinBase):
 
     def _initial_arp_sweep(self, ctx):
         from arpie.network import arp_sweep, mac_vendor, local_ipv4_and_cidr
-        try:
+        with suppress(Exception):
             _, cidr = local_ipv4_and_cidr(ctx.interface if ctx else None)
             if not cidr:
                 return
@@ -245,14 +266,10 @@ class MonitoringMixin(MixinBase):
                         "status": status,
                         "last_seen": now,
                     })
-            try:
+            with suppress(Exception):
                 self.update_view_content()
                 if self.page:
                     self.page.update()
-            except Exception:
-                pass
-        except Exception:
-            pass
 
     def _start_capture_safe(self):
         try:
@@ -260,6 +277,12 @@ class MonitoringMixin(MixinBase):
                 self.live_capture.start()
         except Exception as e:
             self.status_toast = f"Live sniffing notice: {e}"
+            self.is_monitoring = False
+            self.live_capture = None
+            with suppress(Exception):
+                self.update_monitoring_ui()
+                if self.page:
+                    self.page.update()
 
     def toggle_monitoring(self):
         self.is_monitoring = not self.is_monitoring
@@ -274,7 +297,7 @@ class MonitoringMixin(MixinBase):
             self.last_resume_time = time.time()
             if not self.live_capture:
                 ctx = self.network_context or detect_network_context()
-                self.live_capture = LiveCapture(interface=ctx.interface or "wlan0", on_packet=self._process_packet)
+                self.live_capture = LiveCapture(interface=ctx.interface, on_packet=self._process_packet)
                 self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
                 self.capture_thread.start()
         self.update_monitoring_ui()
@@ -355,8 +378,6 @@ class MonitoringMixin(MixinBase):
                         else:
                             self.update_view_content()
 
-                try:
+                with suppress(Exception):
                     if self.page:
                         self.page.update()
-                except Exception:
-                    pass

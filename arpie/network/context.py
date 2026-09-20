@@ -1,6 +1,8 @@
+import os
 import platform
 import re
 import subprocess
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -31,47 +33,40 @@ def _default_interface() -> str:
 
 
 def _get_gateway_ip() -> Optional[str]:
-    try:
+    with suppress(Exception):
         import netifaces  # type: ignore[import-not-found,import-untyped]
         gws = netifaces.gateways()
         default = gws.get("default", {})
         for fam in (netifaces.AF_INET, netifaces.AF_INET6):
             if fam in default:
                 return default[fam][0]
-    except Exception:
-        pass
     # Fallback: parse `ip route` (Linux) or `route print` (Windows)
-    try:
+    with suppress(Exception):
         system = platform.system()
         if system == "Linux":
             out = subprocess.check_output(["ip", "route"], text=True, timeout=3)
-            m = re.search(r"default via (\S+)", out)
-            if m:
-                return m.group(1)
+            if m := re.search(r"default via (\S+)", out):
+                return m[1]
         elif system == "Windows":
             out = subprocess.check_output(["ipconfig"], text=True, timeout=5)
-            m = re.search(r"Default Gateway[ .]*: (\S+)", out)
-            if m:
-                return m.group(1)
+            if m := re.search(r"Default Gateway[ .]*: (\S+)", out):
+                return m[1]
         elif system == "Darwin":
             out = subprocess.check_output(["route", "-n", "get", "default"], text=True, timeout=3)
-            m = re.search(r"gateway: (\S+)", out)
-            if m:
-                return m.group(1)
-    except Exception:
-        pass
+            if m := re.search(r"gateway: (\S+)", out):
+                return m[1]
     return None
 
 
 def _get_ssid() -> Optional[str]:
     system = platform.system()
-    try:
+    with suppress(Exception):
         if system == "Windows":
             out = subprocess.check_output(
                 ["netsh", "wlan", "show", "interfaces"], text=True, timeout=5
             )
             m = re.search(r"^\s*SSID\s*: (.+)$", out, re.MULTILINE)
-            return m.group(1).strip() if m else None
+            return m[1].strip() if m else None
         elif system == "Darwin":
             out = subprocess.check_output(
                 ["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/"
@@ -79,41 +74,31 @@ def _get_ssid() -> Optional[str]:
                 text=True, timeout=5,
             )
             m = re.search(r"\bSSID: (.+)", out)
-            return m.group(1).strip() if m else None
+            return m[1].strip() if m else None
         elif system == "Linux":
             # Check nmcli (NetworkManager - standard on modern Linux desktops)
-            try:
+            with suppress(Exception):
                 out = subprocess.check_output(
                     ["nmcli", "-t", "-f", "active,ssid", "dev", "wifi"],
                     text=True, timeout=3, stderr=subprocess.DEVNULL
                 )
                 for line in out.splitlines():
                     if line.startswith("yes:"):
-                        ssid = line.split(":", 1)[1].strip()
-                        if ssid:
+                        if ssid := line.split(":", 1)[1].strip():
                             return ssid
-            except Exception:
-                pass
             # Fallback to iwgetid
-            try:
+            with suppress(Exception):
                 out = subprocess.check_output(["iwgetid", "-r"], text=True, timeout=3, stderr=subprocess.DEVNULL)
-                ssid = out.strip()
-                if ssid:
+                if ssid := out.strip():
                     return ssid
-            except Exception:
-                pass
             # Fallback to iw
-            try:
+            with suppress(Exception):
                 out = subprocess.check_output(["iw", "dev"], text=True, timeout=3, stderr=subprocess.DEVNULL)
-                m = re.search(r"\bssid\s+(.+)$", out, re.MULTILINE)
-                if m:
-                    return m.group(1).strip()
-            except Exception:
-                pass
+                if m := re.search(r"\bssid\s+(.+)$", out, re.MULTILINE):
+                    return m[1].strip()
             return None
         return None
-    except Exception:
-        return None
+    return None
 
 
 
@@ -133,7 +118,7 @@ def classify_network(ssid: Optional[str], known_trusted_ssids: list) -> str:
 
 def detect_network_context(known_trusted_ssids=None) -> NetworkContext:
     known_trusted_ssids = known_trusted_ssids or []
-    iface = _default_interface()
+    iface = os.environ.get("ARPIE_IFACE", "").strip() or _default_interface()
     ssid = _get_ssid()
     gateway_ip = _get_gateway_ip()
     classification = classify_network(ssid, known_trusted_ssids)

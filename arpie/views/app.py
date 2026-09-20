@@ -1,4 +1,5 @@
 import datetime
+import json
 import threading
 from typing import Optional
 
@@ -11,6 +12,8 @@ from arpie.detection import Alert, DetectionEngine
 from arpie.network.context import NetworkContext
 from arpie.security import SealManager
 from arpie.infrastructure.threat_intel import IpEnrichment, ThreatIntelClient
+from arpie.network import detect_network_context, local_ipv4_and_cidr
+from arpie.detection import session_risk_score
 from arpie.controllers import AuthController, CaptureController, ReportController, SealController
 from arpie.views.mixins import (
     AuthMixin,
@@ -28,13 +31,15 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
         self.db = Database(CONFIG.db_path)
         self.threat_intel = ThreatIntelClient(self.db, CONFIG.threat_intel)
 
-        self.current_screen = "register" if not self.db.has_operators() else "login"
+        self.current_screen = "login" if self.db.has_operators() else "register"
         self.current_view = "dashboard"
 
         self.user_role = "End User"
         self.user_name = ""
 
         self.network_context: Optional[NetworkContext] = None
+        self.local_ip: Optional[str] = None
+        self.subnet_cidr: Optional[str] = None
         self.selected_profile = "Public Wi-Fi"
         self.detection_rules = {
             "arp": True,
@@ -46,7 +51,14 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
             "traffic": "100",
             "port": "15",
             "arp_window": "5",
+            "gw_window": "10",
         }
+        for key, default in self.thresholds.items():
+            self.thresholds[key] = self.db.get_config(f"detection_threshold_{key}", default)
+        for key, default in self.detection_rules.items():
+            saved = self.db.get_config(f"detection_rule_{key}", "" if default else "0")
+            if saved:
+                self.detection_rules[key] = saved == "1"
 
         self.selected_alert: Optional[dict] = None
         self.session_id: Optional[int] = None
@@ -146,6 +158,63 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
         self.page.add(self.root_container)
         self.render()
         self.page.run_task(self._timer_task)
+
+    def get_trusted_ssids(self) -> list[str]:
+        try:
+            values = json.loads(self.db.get_config("network.trusted_ssids", "[]"))
+            return [value for value in values if isinstance(value, str)]
+        except (TypeError, ValueError):
+            return []
+
+    def refresh_network_context(self):
+        self.network_context = detect_network_context(self.get_trusted_ssids())
+        self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(self.network_context.interface)
+        return self.network_context
+
+    def apply_classification(self, radio_value: str, remember: bool = False):
+        mapping = {"public": "public-untrusted", "trusted": "trusted", "unknown": "unknown"}
+        if self.network_context is None:
+            self.refresh_network_context()
+        self.network_context.classification = mapping.get(radio_value, "public-untrusted")
+        ssid = self.network_context.ssid
+        trusted = self.get_trusted_ssids()
+        if self.network_context.classification == "trusted" and remember and ssid and ssid not in trusted:
+            trusted.append(ssid)
+        elif self.network_context.classification != "trusted" and ssid:
+            trusted = [value for value in trusted if value != ssid]
+        self.db.set_config("network.trusted_ssids", json.dumps(trusted))
+
+    @property
+    def session_risk(self) -> int:
+        if self.alerts:
+            return session_risk_score(self.alerts, self.enrichments)
+        return 0
+
+    def simulate_demo_threat(self):
+        from scapy.layers.inet import IP, TCP
+        from scapy.layers.l2 import ARP, Ether
+
+        if self.engine is None:
+            ctx = self.network_context or self.refresh_network_context()
+            self.session_id = self.session_id or self.db.start_session(
+                ctx.ssid, ctx.classification, ctx.interface, source="self-test", operator_id=self.operator_id
+            )
+            self.engine = self._configured_detection_engine(gateway_ip=ctx.gateway_ip)
+
+        gateway = (self.network_context.gateway_ip if self.network_context else None) or "192.0.2.1"
+        victim = self.local_ip or "192.0.2.10"
+        attacker = "192.0.2.66"
+        self.status_toast = "Self-test running: injecting synthetic attack packets through the detection engine."
+
+        def inject():
+            self._process_packet(Ether() / ARP(op=2, psrc=gateway, hwsrc="de:ad:be:ef:00:01", pdst=victim))
+            self._process_packet(Ether() / ARP(op=2, psrc=gateway, hwsrc="de:ad:be:ef:00:02", pdst=victim))
+            for port in range(20, 45):
+                self._process_packet(Ether() / IP(src=attacker, dst=victim) / TCP(dport=port, flags="S"))
+            for _ in range(160):
+                self._process_packet(Ether() / IP(src=attacker, dst=victim) / TCP(dport=80, flags="S"))
+
+        threading.Thread(target=inject, daemon=True).start()
 
     def _init_page(self):
         self.page.title = "Arpie — Endpoint NIDS & Threat Response"

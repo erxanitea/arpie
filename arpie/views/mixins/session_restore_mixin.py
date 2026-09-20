@@ -2,6 +2,7 @@ import datetime
 import json
 
 from arpie.views.theme import SEVERITY_BG, SEVERITY_COLORS
+from arpie.models import Alert
 
 
 from arpie.views.mixins._typing import MixinBase
@@ -42,6 +43,18 @@ class SessionRestoreMixin(MixinBase):
                     "evidence": ev_data,
                 })
             self.all_alerts_list = alerts
+            self.alerts = [
+                Alert(
+                    detection_type=event["type"].lower().replace(" ", "_"),
+                    source_ip=event["source"],
+                    target=event["target"],
+                    severity=event["severity"].lower(),
+                    confidence=float(event["confidence"]),
+                    evidence=event["evidence"],
+                    recommended_action=event["action"],
+                )
+                for event in alerts
+            ]
             self.threats_count = len(alerts)
 
         dev_json = self.db.get_config("snapshot_devices", "")

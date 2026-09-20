@@ -18,6 +18,10 @@ dist/
 *.egg-info/
 *.egg
 *.spec
+.flet/
+*.appimage
+*.tar.gz
+*.zip
 
 # Local Runtime Data and Reports
 *.db
@@ -25,6 +29,20 @@ dist/
 arpie_session_*.json
 arpie_session_*.html
 arpie_session_*.pdf
+reports/
+Arpie_Reports/
+
+# Local packet captures and runtime logs
+*.pcapng
+demo-live.pcap
+captures/
+*.log
+
+# Test and coverage output
+.coverage
+coverage.xml
+htmlcov/
+test-results.xml
 
 # Secrets and Local Environment
 .env

@@ -10,5 +10,6 @@
     "flet",
     "fromtimestamp",
     "strftime"
-  ]
+  ],
+  "semgrep.scan.onlyGitDirty": false
 }

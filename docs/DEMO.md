@@ -20,6 +20,29 @@ from real packets — there is no scripted/fake data in the UI.
 > **host-only / internal network** between two VMs also works and is the most
 > reproducible option for a classroom.
 
+### Recommended public-Wi-Fi test network
+
+Use a phone hotspot, travel router, or a Linux NetworkManager hotspot that you
+own. Set a clearly fictional SSID such as `Arpie-Public-Demo`, use WPA2/WPA3,
+and turn **client/AP isolation off** so the two test devices can exchange ARP
+and directed packets. Do not use a real cafe, campus, or airport network.
+
+On a Linux defender machine with NetworkManager, a temporary hotspot can be
+created with:
+
+```bash
+nmcli device wifi hotspot ifname <DEFENDER_WIFI_IFACE> \
+  con-name Arpie-Public-Demo ssid Arpie-Public-Demo password 'demo-password-1234'
+```
+
+Connect the attacker device to that SSID, identify the defender and gateway
+addresses from Arpie's Network view, and use the interface name from the same
+view. If automatic interface selection is wrong, force it explicitly:
+
+```bash
+sudo -E env ARPIE_IFACE=<DEFENDER_WIFI_IFACE> .venv/bin/python main.py
+```
+
 ### Why the attacker must target the Arpie host directly
 
 An endpoint on WPA2/WPA3 Wi-Fi only sees traffic **addressed to it** plus
@@ -67,8 +90,15 @@ pip install scapy
 Use the IPs Arpie showed you:
 
 ```bash
-sudo python tools/simulate_attack.py --target <ARPIE_HOST_IP> --gateway <GATEWAY_IP>
+sudo python tools/simulate_attack.py \
+  --target <ARPIE_HOST_IP> --gateway <GATEWAY_IP> --iface <ATTACKER_WIFI_IFACE>
 ```
+
+Run only against the private demo network you control. The simulator emits
+crafted ARP and IP packets; it is not a tool for testing networks without
+explicit permission. Start with option 1, then 2, 3, and 4 separately so each
+alert can be identified during a defense. Use option 5 only for the complete
+narrative.
 
 Menu options map 1:1 to Arpie's four detection rules:
 
@@ -99,6 +129,31 @@ For the main demo beat, run **option 5**. Watch Arpie:
 4. Go to **Reports** → **Export Active PDF/HTML/JSON** to produce the forensic
    session report on the spot.
 
+## Step 4A — Verify the demo with Wireshark
+
+Run Wireshark on the defender's active Wi-Fi interface before launching the
+simulator. This gives you packet-level evidence alongside Arpie's alerts:
+
+1. Select the interface shown by Arpie as `ARPIE_IFACE`.
+2. Start a capture and apply this display filter, replacing the host address:
+
+  ```text
+  arp || (ip.addr == <ARPIE_HOST_IP> && tcp.flags.syn == 1 && tcp.flags.ack == 0)
+  ```
+
+3. Run one simulator option at a time and correlate its timestamp with the
+  Arpie alert and the Wireshark packet details.
+4. Stop the capture and save it as `demo-live.pcapng`. Wireshark can export a
+  `.pcap` copy if you want to replay it through the CLI:
+
+  ```bash
+  .venv/bin/python main.py --pcap demo-live.pcap
+  ```
+
+Useful filters for the presentation are `arp`, `tcp.flags.syn == 1`,
+`ip.addr == <ARPIE_HOST_IP>`, and `eth.addr == <ATTACKER_MAC>`. Wireshark is
+evidence and inspection here; it does not replace Arpie's detector.
+
 ## Step 5 — No second device? Use the Engine Self-Test
 
 If Wi-Fi is uncooperative or you have one machine, click **⚡ Engine Self-Test**
@@ -115,7 +170,7 @@ Replay PCAP** on `sample_pcaps/demo_attack.pcap`.
   (which MACs, which ports, measured pps). No black-box ML to hand-wave.
 - **Same pipeline everywhere** — live capture, PCAP replay, and the self-test all
   feed one `DetectionEngine`; that's why it's reproducible and testable
-  (`pytest tests/ -v`, 21 tests).
+  (`pytest tests/ -v`, 56 tests at the time of writing).
 - **Honest scope** — Arpie is a **layer-2 trust monitor + host-directed attack
   detector for the local broadcast domain**. It does not claim to see other
   clients' encrypted traffic, because on modern Wi-Fi no endpoint can.

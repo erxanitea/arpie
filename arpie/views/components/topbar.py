@@ -21,7 +21,7 @@ def build_topbar(app) -> ft.Container:
             ctx_color = "#64748B"
 
     right_controls: list[ft.Control] = []
-    is_evaluator = getattr(app, "operator_role", "") == "Evaluator/Administrator"
+    is_evaluator = getattr(app, "user_role", "") == "Evaluator/Administrator"
     if is_evaluator:
         right_controls.append(
             ft.TextButton(

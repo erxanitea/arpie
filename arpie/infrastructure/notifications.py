@@ -7,9 +7,10 @@ import os
 import platform
 import subprocess
 import shutil
+from contextlib import suppress
 
 
-def send_desktop_notification(title: str, message: str, severity: str = "critical"):
+def send_desktop_notification(title: str, message: str, severity: str = "critical") -> bool:
     """Fires a native OS popup notification (Linux notify-send / Windows toast / macOS osascript)."""
     current_os = platform.system()
     assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets"))
@@ -17,13 +18,14 @@ def send_desktop_notification(title: str, message: str, severity: str = "critica
     if not os.path.exists(logo_path):
         logo_path = os.path.join(assets_dir, "logo.png")
 
-    try:
+    with suppress(Exception):
         if current_os == "Linux":
-            if shutil.which("notify-send"):
-                urgency = "critical" if severity in ("high", "critical") else "normal"
-                icon = "dialog-error" if severity in ("high", "critical") else "dialog-warning"
-                cmd = ["notify-send", "-a", "Arpie Endpoint NIDS", "-u", urgency, "-i", icon, title, message]
+            if notify_send := shutil.which("notify-send"):
+                urgency = "critical" if severity in {"high", "critical"} else "normal"
+                icon = "dialog-error" if severity in {"high", "critical"} else "dialog-warning"
+                cmd = [notify_send, "-a", "Arpie Endpoint NIDS", "-u", urgency, "-i", icon, title, message]
                 subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return True
 
 
         elif current_os == "Windows":
@@ -38,10 +40,11 @@ def send_desktop_notification(title: str, message: str, severity: str = "critica
             $notify.showballoontip(10, '{safe_title}', '{safe_message}', [system.windows.forms.tooltipicon]::Warning)
             """
             subprocess.Popen(["powershell", "-Command", ps_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
         elif current_os == "Darwin": # macOS
             safe_title = title.replace("\\", "\\\\").replace('"', '\\"')
             safe_message = message.replace("\\", "\\\\").replace('"', '\\"')
             apple_script = f'display notification "{safe_message}" with title "{safe_title}" subtitle "Arpie Threat Response"'
             subprocess.Popen(["osascript", "-e", apple_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        pass  # Never crash the NIDS engine if notification delivery fails
+            return True
+    return False
