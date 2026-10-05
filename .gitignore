@@ -72,3 +72,7 @@ arpie/scapy
 .agents/**/scratch/
 .agents/**/logs/
 .agents/**/*.log
+
+# Auto-generated editor/agent baselines
+.github/copilot-instructions.md
+.kilo/

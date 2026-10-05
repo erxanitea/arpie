@@ -10,7 +10,7 @@ def main():
     parser.add_argument("--seed", action="store_true", help="Seed realistic evaluation data into SQLite database")
     parser.add_argument("--clear", "--unseed", action="store_true", dest="clear", help="Remove all seeded records from database")
     parser.add_argument("--status", action="store_true", help="Check if database currently contains seeded records")
-    parser.add_argument("--user", "--email", dest="user", default="eradumangcas7@gmail.com", help="Operator email or username to associate seeded data with (default: eradumangcas7@gmail.com)")
+    parser.add_argument("--user", "--email", dest="user", default=None, help="Operator email or username to associate seeded data with (default: first registered operator)")
     args = parser.parse_args()
 
     db = Database(CONFIG.db_path)

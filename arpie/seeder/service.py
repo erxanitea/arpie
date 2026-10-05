@@ -17,9 +17,9 @@ def is_seeded(db: Database) -> bool:
         return bool(row and row["cnt"] > 0)
 
 
-def seed_database(db: Database, operator_id: int | None = None, user_identifier: str | None = "eradumangcas7@gmail.com") -> dict:
-    if operator_id is None and user_identifier:
-        if op := db.get_operator(user_identifier):
+def seed_database(db: Database, operator_id: int | None = None, user_identifier: str | None = None) -> dict:
+    if operator_id is None:
+        if user_identifier and (op := db.get_operator(user_identifier)):
             operator_id = op["id"]
         elif ops := db.list_operators():
             operator_id = ops[0]["id"]
