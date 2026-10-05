@@ -34,8 +34,10 @@ class AuthController:
         app.user_role = operator.get("role", "End User")
         app.operator_username = operator.get("username", "")
         app.operator_email = operator.get("email", "")
-        app.operator_last_login = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        app.network_context = detect_network_context()
+        if hasattr(app, "refresh_network_context"):
+            app.refresh_network_context()
+        else:
+            app.network_context = detect_network_context()
         app._restore_session_from_db()
         app._pending_operator = None
         app.current_screen = "context"

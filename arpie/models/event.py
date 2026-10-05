@@ -30,3 +30,8 @@ class EventMixin(MixinBase):
         with self.cursor() as cur:
             cur.execute("SELECT * FROM events WHERE session_id = ? ORDER BY ts ASC", (session_id,))
             return [dict(r) for r in cur.fetchall()]
+
+    def update_event_status(self, event_id: int, status: str):
+        with self.cursor() as cur:
+            cur.execute("UPDATE events SET status = ? WHERE id = ?", (status, event_id))
+

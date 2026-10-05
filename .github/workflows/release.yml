@@ -88,6 +88,18 @@ jobs:
           }
           & $iscc "/DMyAppVersion=$version" packaging/windows/installer.iss
 
+      - name: Build Linux Debian package (.deb)
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          bash packaging/linux/build_deb.sh "${{ github.ref_name }}" "amd64" "build/linux"
+
+      - name: Build macOS installer (.dmg)
+        if: matrix.target == 'macos'
+        shell: bash
+        run: |
+          bash packaging/macos/build_dmg.sh "build/macos" "arpie-macos.dmg"
+
       - name: Upload to release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
@@ -95,4 +107,8 @@ jobs:
             arpie-${{ matrix.target }}.zip
             arpie-${{ matrix.target }}.tar.gz
             arpie-windows-setup.exe
+            arpie-macos.dmg
+            arpie-linux-amd64.deb
+            arpie_*.deb
           fail_on_unmatched_files: false
+

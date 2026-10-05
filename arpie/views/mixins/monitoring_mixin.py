@@ -115,6 +115,13 @@ class MonitoringMixin(MixinBase):
             for alert in self.engine.process(packet):
                 self.alerts.append(alert)
                 self._current_interval_suspicious += 1
+                evidence_dict = alert.evidence if isinstance(alert.evidence, dict) else {}
+                desc = (
+                    evidence_dict.get("reason")
+                    or evidence_dict.get("description")
+                    or alert.recommended_action
+                    or str(alert.evidence)
+                )
                 alert_dict = {
                     "time": datetime.datetime.now().strftime("%H:%M:%S"),
                     "type": alert.detection_type.replace("_", " ").title(),
@@ -126,7 +133,8 @@ class MonitoringMixin(MixinBase):
                     "status": "NEW",
                     "fg": SEVERITY_COLORS.get(alert.severity.lower(), "#DC2626"),
                     "bg": SEVERITY_BG.get(alert.severity.lower(), "#FEE2E2"),
-                    "desc": str(alert.evidence),
+                    "desc": desc,
+                    "evidence": evidence_dict,
                 }
                 self.all_alerts_list.insert(0, alert_dict)
 
@@ -142,7 +150,7 @@ class MonitoringMixin(MixinBase):
 
                 if self.session_id:
                     score = score_alert(alert, enrichment)
-                    self.db.log_event(
+                    event_id = self.db.log_event(
                         self.session_id,
                         alert.detection_type,
                         alert.source_ip or src_ip,
@@ -154,6 +162,8 @@ class MonitoringMixin(MixinBase):
                         alert.recommended_action,
                         ts=alert.ts,
                     )
+                    alert_dict["id"] = event_id
+
 
                 evidence_text = alert.evidence.get("reason", str(alert.evidence)) if isinstance(alert.evidence, dict) else str(alert.evidence)
                 send_desktop_notification(
@@ -220,17 +230,22 @@ class MonitoringMixin(MixinBase):
         self._current_interval_blocked = 0
         self._tick_counter = 0
 
-        ctx = detect_network_context()
-        self.network_context = ctx
-        self.session_id = self.db.start_session(ctx.ssid, ctx.classification, ctx.interface, source="live", operator_id=self.operator_id)
-        self.engine = self._configured_detection_engine(gateway_ip=ctx.gateway_ip)
+        ctx = self.network_context or self.refresh_network_context()
+        ssid = getattr(ctx, "ssid", None)
+        classification = getattr(ctx, "classification", "public-untrusted")
+        iface = getattr(ctx, "interface", "")
+        gw_ip = getattr(ctx, "gateway_ip", None)
+        self.session_id = self.db.start_session(ssid, classification, iface, source="live", operator_id=self.operator_id)
+        self.engine = self._configured_detection_engine(gateway_ip=gw_ip)
 
-        threading.Thread(target=self._initial_arp_sweep, args=(ctx,), daemon=True).start()
+        if ctx:
+            threading.Thread(target=self._initial_arp_sweep, args=(ctx,), daemon=True).start()
 
         if not self.live_capture:
-            self.live_capture = LiveCapture(interface=ctx.interface, on_packet=self._process_packet)
+            self.live_capture = LiveCapture(interface=iface, on_packet=self._process_packet)
             self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
             self.capture_thread.start()
+
 
         self.update_monitoring_ui()
 
@@ -275,8 +290,19 @@ class MonitoringMixin(MixinBase):
         try:
             if self.live_capture:
                 self.live_capture.start()
+        except PermissionError:
+            self.status_toast = "Live capture requires administrator privileges (sudo arpie or setcap CAP_NET_RAW)."
+            self.is_monitoring = False
+            self.live_capture = None
+            with suppress(Exception):
+                self.update_monitoring_ui()
+                if self.page:
+                    self.page.update()
         except Exception as e:
-            self.status_toast = f"Live sniffing notice: {e}"
+            if "Operation not permitted" in str(e):
+                self.status_toast = "Live capture requires administrator privileges (sudo arpie or setcap CAP_NET_RAW)."
+            else:
+                self.status_toast = f"Live sniffing notice: {e}"
             self.is_monitoring = False
             self.live_capture = None
             with suppress(Exception):
@@ -296,10 +322,12 @@ class MonitoringMixin(MixinBase):
         else:
             self.last_resume_time = time.time()
             if not self.live_capture:
-                ctx = self.network_context or detect_network_context()
-                self.live_capture = LiveCapture(interface=ctx.interface, on_packet=self._process_packet)
+                ctx = self.network_context or self.refresh_network_context()
+                iface = getattr(ctx, "interface", "")
+                self.live_capture = LiveCapture(interface=iface, on_packet=self._process_packet)
                 self.capture_thread = threading.Thread(target=self._start_capture_safe, daemon=True)
                 self.capture_thread.start()
+
         self.update_monitoring_ui()
         self.update_view_content()
         self.page.update()
@@ -314,7 +342,7 @@ class MonitoringMixin(MixinBase):
                 if self.current_screen == "app_shell":
                     latest = self.db.get_latest_session(self.operator_id)
                     current_sid = latest["id"] if latest else None
-                    if current_sid != self.session_id:
+                    if not self.is_monitoring and current_sid != self.session_id:
                         if latest:
                             self._restore_session_from_db()
                         else:

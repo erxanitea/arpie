@@ -19,6 +19,7 @@ class SessionRestoreMixin(MixinBase):
         raw_events = self.db.get_events(self.session_id)
         if raw_events:
             alerts = []
+            reconstructed_alerts = []
             for e in raw_events:
                 ev_data = {}
                 try:
@@ -29,33 +30,35 @@ class SessionRestoreMixin(MixinBase):
                     "id": e["id"],
                     "time": datetime.datetime.fromtimestamp(e["ts"]).strftime("%H:%M:%S"),
                     "date": datetime.datetime.fromtimestamp(e["ts"]).strftime("%Y-%m-%d"),
-                    "type": e["detection_type"].replace("_", " ").title(),
-                    "severity": e["severity"].upper(),
-                    "source": e["source_ip"] or "Unknown",
-                    "target": e.get("target") or "Local Endpoint",
-                    "status": e.get("status", "NEW"),
-                    "fg": SEVERITY_COLORS.get(e["severity"].lower(), "#DC2626"),
-                    "bg": SEVERITY_BG.get(e["severity"].lower(), "#FEE2E2"),
-                    "desc": ev_data.get("description", str(ev_data)),
-                    "action": e.get("recommended_action") or "",
-                    "confidence": e.get("confidence", 0.0),
-                    "risk_score": e.get("risk_score", 0),
+                    "type": str(e["detection_type"]).replace("_", " ").title(),
+                    "severity": str(e["severity"]).upper(),
+                    "source": str(e["source_ip"]) if e.get("source_ip") else "Unknown",
+                    "target": str(e.get("target") or "Local Endpoint"),
+                    "status": str(e.get("status", "NEW")),
+                    "fg": SEVERITY_COLORS.get(str(e["severity"]).lower(), "#DC2626"),
+                    "bg": SEVERITY_BG.get(str(e["severity"]).lower(), "#FEE2E2"),
+                    "desc": ev_data.get("reason") or ev_data.get("description") or e.get("recommended_action") or str(ev_data),
+                    "action": str(e.get("recommended_action") or ""),
+                    "confidence": float(e.get("confidence", 0.0)),
+                    "risk_score": int(e.get("risk_score", 0)),
                     "evidence": ev_data,
                 })
-            self.all_alerts_list = alerts
-            self.alerts = [
-                Alert(
-                    detection_type=event["type"].lower().replace(" ", "_"),
-                    source_ip=event["source"],
-                    target=event["target"],
-                    severity=event["severity"].lower(),
-                    confidence=float(event["confidence"]),
-                    evidence=event["evidence"],
-                    recommended_action=event["action"],
+                reconstructed_alerts.append(
+                    Alert(
+                        detection_type=str(e["detection_type"]),
+                        source_ip=str(e["source_ip"]) if e.get("source_ip") else None,
+                        target=str(e["target"]) if e.get("target") else None,
+                        severity=str(e["severity"]).lower(),
+                        confidence=float(e.get("confidence", 0.0)),
+                        evidence=ev_data if isinstance(ev_data, dict) else {},
+                        recommended_action=str(e.get("recommended_action") or ""),
+                        ts=float(e.get("ts", 0.0)),
+                    )
                 )
-                for event in alerts
-            ]
+            self.all_alerts_list = alerts
+            self.alerts = reconstructed_alerts
             self.threats_count = len(alerts)
+
 
         dev_json = self.db.get_config("snapshot_devices", "")
         if dev_json:

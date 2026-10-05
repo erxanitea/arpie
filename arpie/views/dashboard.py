@@ -190,11 +190,22 @@ def render_dashboard_view(app) -> ft.Column:
         width=54, height=54,
     )
 
+    engine_status_text = "ACTIVE" if app.is_monitoring else "PAUSED"
+    engine_status_color = "#10B981" if app.is_monitoring else "#64748B"
+    engine_status_bg = "#ECFDF5" if app.is_monitoring else "#F1F5F9"
+    app.timer_text.tooltip = "Live monitoring duration (ticks when active)"
+
     card_engine = ft.Container(
         content=ft.Row([
             engine_ring,
             ft.Column([
-                ft.Text("NIDS ENGINE", size=10, weight=ft.FontWeight.BOLD, color="#94A3B8"),
+                ft.Row([
+                    ft.Text("NIDS ENGINE", size=10, weight=ft.FontWeight.BOLD, color="#94A3B8"),
+                    ft.Container(
+                        content=ft.Text(engine_status_text, size=9, weight=ft.FontWeight.BOLD, color=engine_status_color),
+                        bgcolor=engine_status_bg, border_radius=4, padding=ft.Padding.symmetric(horizontal=4, vertical=1),
+                    )
+                ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 app.timer_text,
                 ft.Container(
                     content=ft.Row([

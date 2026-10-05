@@ -1,4 +1,5 @@
 import flet as ft
+from arpie.config import CONFIG
 from arpie.middleware import can_manage_system_settings
 from arpie.forms.auth import validate_password
 from arpie.security import secrets_store
@@ -204,28 +205,40 @@ def render_settings_view(app) -> ft.Column:
             abuse_val = (abuse_field.value or "").strip()
             ipinfo_val = (ipinfo_field.value or "").strip()
             saved_any = False
-            if abuse_val and secrets_store.set_secret("ABUSEIPDB_API_KEY", abuse_val):
-                saved_any = True
+            if abuse_val:
+                secrets_store.set_secret("ABUSEIPDB_API_KEY", abuse_val)
                 import os
                 os.environ["ABUSEIPDB_API_KEY"] = abuse_val
-            if ipinfo_val and secrets_store.set_secret("IPINFO_API_KEY", ipinfo_val):
+                if hasattr(app, "threat_intel") and app.threat_intel:
+                    app.threat_intel.config.abuseipdb_api_key = abuse_val
+                CONFIG.threat_intel.abuseipdb_api_key = abuse_val
                 saved_any = True
+            if ipinfo_val:
+                secrets_store.set_secret("IPINFO_API_KEY", ipinfo_val)
                 import os
                 os.environ["IPINFO_API_KEY"] = ipinfo_val
+                if hasattr(app, "threat_intel") and app.threat_intel:
+                    app.threat_intel.config.ipinfo_api_key = ipinfo_val
+                CONFIG.threat_intel.ipinfo_api_key = ipinfo_val
+                saved_any = True
 
             for key, value in app.thresholds.items():
                 app.db.set_config(f"detection_threshold_{key}", str(value))
             for key, enabled in app.detection_rules.items():
                 app.db.set_config(f"detection_rule_{key}", "1" if enabled else "0")
 
+            if getattr(app, "is_monitoring", False):
+                gw = app.network_context.gateway_ip if app.network_context else None
+                app.engine = app._configured_detection_engine(gateway_ip=gw)
+
             if saved_any and secrets_store.available():
-                api_status.value = "API keys saved to OS keyring."
+                api_status.value = "API keys saved to OS keyring and applied."
                 api_status.color = "#10B981"
             else:
                 api_status.value = "Keys applied for this session (keyring unavailable — set env vars for persistence)."
                 api_status.color = "#F59E0B"
             api_status.visible = True
-            app.status_toast = "Detection configuration saved."
+            app.status_toast = "Detection configuration saved and applied."
             app.update_view_content()
             app.page.update()
 

@@ -10,9 +10,10 @@ whether that binary actually works on someone else's machine.
 Users download the compiled desktop package from the **Releases** page. They do
 not clone the repository and do not need Python or Git:
 
-- `arpie-linux.tar.gz` for Linux
-- `arpie-windows-setup.exe` (installer) or `arpie-windows.zip` (portable) for Windows
-- `arpie-macos.tar.gz` for macOS
+- **Windows:** `arpie-windows-setup.exe` (Inno Setup installer) or `arpie-windows.zip` (portable)
+- **macOS:** `arpie-macos.dmg` (drag-and-drop installer disk image) or `arpie-macos.tar.gz` (portable)
+- **Linux:** `arpie-linux-amd64.deb` (Debian/Ubuntu package), `scripts/install.sh` (one-line installer), or `arpie-linux.tar.gz` (portable)
+
 
 The repository source is for maintainers, developers, evaluators, and controlled
 demo testing. **Code → Download ZIP** is not the end-user installation method.

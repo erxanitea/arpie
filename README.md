@@ -38,19 +38,30 @@ Download the latest version from the [Releases](https://github.com/erxanitea/arp
 
 ### Windows
 1. Download **`arpie-windows-setup.exe`** from [Releases](https://github.com/erxanitea/arpie/releases).
-2. Run the installer (automatically adds Desktop and Start Menu shortcuts).
+2. Run the installer (includes Start Menu and Desktop shortcuts).
 3. *(Optional)* A standalone portable archive (`arpie-windows.zip`) is also available.
 
-### Linux
-Install directly from your terminal (no `sudo` required):
+### macOS
+1. Download **`arpie-macos.dmg`** from [Releases](https://github.com/erxanitea/arpie/releases).
+2. Open the disk image and drag **Arpie** into your **Applications** folder.
+3. *(Optional)* A standalone archive (`arpie-macos.tar.gz`) is also available.
+
+### Linux (Ubuntu, Debian, Mint, Kali, Arch, etc.)
+**Debian / Ubuntu package (`.deb`):**
+```bash
+# Download and install the .deb package:
+sudo dpkg -i arpie-linux-amd64.deb
+# or
+sudo apt install ./arpie-linux-amd64.deb
+```
+
+**One-line installer (any Linux distro, no `sudo` required):**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/erxanitea/arpie/main/scripts/install.sh | bash
 arpie
 ```
-*Or download `arpie-linux.tar.gz` manually from [Releases](https://github.com/erxanitea/arpie/releases).*
+*(Includes automatic desktop application menu launcher, app icon, and systemd background service registration).*
 
-### macOS
-Download **`arpie-macos.tar.gz`** from [Releases](https://github.com/erxanitea/arpie/releases), unpack, and launch Arpie.
 
 ---
 

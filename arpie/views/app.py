@@ -40,6 +40,10 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
         self.network_context: Optional[NetworkContext] = None
         self.local_ip: Optional[str] = None
         self.subnet_cidr: Optional[str] = None
+        try:
+            self.refresh_network_context()
+        except Exception:
+            pass
         self.selected_profile = "Public Wi-Fi"
         self.detection_rules = {
             "arp": True,
@@ -169,20 +173,33 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
     def refresh_network_context(self):
         self.network_context = detect_network_context(self.get_trusted_ssids())
         self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(self.network_context.interface)
+        if not self.local_ip:
+            self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(None)
         return self.network_context
+
+    def ensure_host_ip(self) -> Optional[str]:
+        if not self.local_ip:
+            try:
+                self.refresh_network_context()
+            except Exception:
+                pass
+        return self.local_ip
 
     def apply_classification(self, radio_value: str, remember: bool = False):
         mapping = {"public": "public-untrusted", "trusted": "trusted", "unknown": "unknown"}
-        if self.network_context is None:
-            self.refresh_network_context()
-        self.network_context.classification = mapping.get(radio_value, "public-untrusted")
-        ssid = self.network_context.ssid
+        ctx = self.network_context or self.refresh_network_context()
+        if ctx is None:
+            return
+        ctx.classification = mapping.get(radio_value, "public-untrusted")
+        ssid = ctx.ssid
         trusted = self.get_trusted_ssids()
-        if self.network_context.classification == "trusted" and remember and ssid and ssid not in trusted:
+        if ctx.classification == "trusted" and remember and ssid and ssid not in trusted:
             trusted.append(ssid)
-        elif self.network_context.classification != "trusted" and ssid:
+        elif ctx.classification != "trusted" and ssid:
             trusted = [value for value in trusted if value != ssid]
         self.db.set_config("network.trusted_ssids", json.dumps(trusted))
+        ctx.known_trusted_ssids = trusted
+
 
     @property
     def session_risk(self) -> int:
@@ -227,4 +244,8 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
         self.page.window.min_width = 1100
         self.page.window.min_height = 700
         self.file_picker = ft.FilePicker()
-        self.page.services.append(self.file_picker)
+        if hasattr(self.page, "services"):
+            self.page.services.append(self.file_picker)
+        elif hasattr(self.page, "overlay"):
+            self.page.overlay.append(self.file_picker)
+

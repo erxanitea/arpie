@@ -58,6 +58,35 @@ def _get_gateway_ip() -> Optional[str]:
     return None
 
 
+def _get_gateway_mac(gw_ip: Optional[str]) -> Optional[str]:
+    if not gw_ip:
+        return None
+    with suppress(Exception):
+        system = platform.system()
+        if system == "Linux":
+            with suppress(Exception):
+                with open("/proc/net/arp", "r") as f:
+                    for line in f.readlines()[1:]:
+                        parts = line.split()
+                        if len(parts) >= 4 and parts[0] == gw_ip and parts[3] != "00:00:00:00:00:00":
+                            return parts[3].lower()
+            out = subprocess.check_output(["ip", "neigh"], text=True, timeout=3, stderr=subprocess.DEVNULL)
+            for line in out.splitlines():
+                if gw_ip in line and "lladdr" in line:
+                    parts = line.split()
+                    if "lladdr" in parts:
+                        idx = parts.index("lladdr")
+                        if idx + 1 < len(parts):
+                            return parts[idx + 1].lower()
+        elif system in ("Windows", "Darwin"):
+            out = subprocess.check_output(["arp", "-a"], text=True, timeout=3, stderr=subprocess.DEVNULL)
+            for line in out.splitlines():
+                if gw_ip in line:
+                    if m := re.search(r"([0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2})", line):
+                        return m[1].replace("-", ":").lower()
+    return None
+
+
 def _get_ssid() -> Optional[str]:
     system = platform.system()
     with suppress(Exception):
@@ -121,12 +150,13 @@ def detect_network_context(known_trusted_ssids=None) -> NetworkContext:
     iface = os.environ.get("ARPIE_IFACE", "").strip() or _default_interface()
     ssid = _get_ssid()
     gateway_ip = _get_gateway_ip()
+    gateway_mac = _get_gateway_mac(gateway_ip)
     classification = classify_network(ssid, known_trusted_ssids)
     return NetworkContext(
         interface=iface,
         ssid=ssid,
         gateway_ip=gateway_ip,
-        gateway_mac=None,   # resolved via ARP once capture starts
+        gateway_mac=gateway_mac,
         classification=classification,
         known_trusted_ssids=known_trusted_ssids,
     )

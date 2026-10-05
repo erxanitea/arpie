@@ -6,13 +6,25 @@ from arpie.network import arp_sweep, mac_vendor, local_ipv4_and_cidr
 
 def render_inventory_view(app) -> ft.Column:
     ctx = getattr(app, "network_context", None)
+    if not ctx and hasattr(app, "refresh_network_context"):
+        ctx = app.refresh_network_context()
+
     ssid_name = (ctx.ssid if ctx and ctx.ssid else None) or "Not connected"
     gw_ip = (ctx.gateway_ip if ctx and ctx.gateway_ip else None) or "Unknown"
+    if ctx and not ctx.gateway_mac and gw_ip != "Unknown":
+        from arpie.network.context import _get_gateway_mac
+        found_mac = _get_gateway_mac(gw_ip)
+        if found_mac:
+            ctx.gateway_mac = found_mac
+
     gw_mac = (ctx.gateway_mac if ctx and ctx.gateway_mac else None) or "Resolving via ARP…"
     iface = (ctx.interface if ctx and ctx.interface else None) or "Unknown"
     cls = ctx.classification if ctx and ctx.classification else "unknown"
-    subnet = getattr(app, "subnet_cidr", None) or "Unknown"
+
     local_ip = getattr(app, "local_ip", None) or "Unknown"
+    if local_ip == "Unknown" and hasattr(app, "ensure_host_ip"):
+        local_ip = app.ensure_host_ip() or "Unknown"
+    subnet = getattr(app, "subnet_cidr", None) or "Unknown"
 
     is_trusted = (cls == "trusted")
     trust_label = "TRUSTED / PRIVATE NETWORK" if is_trusted else "PUBLIC / UNTRUSTED NETWORK"

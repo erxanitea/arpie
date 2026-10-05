@@ -60,17 +60,26 @@ def render_profile_screen(app) -> ft.Container:
         app.render()
         app.start_monitoring()
 
+    is_trusted = bool(app.network_context and getattr(app.network_context, "classification", "") == "trusted")
+    rec_profile = "Balanced" if is_trusted else "Public Wi-Fi"
+
     profile_cards = ft.Row([
         ft.Container(
             content=ft.Column([
                 ft.Row([
                     ft.Icon(ft.Icons.BALANCE_ROUNDED, size=24, color="#64748B"),
-                    ft.Icon(ft.Icons.RADIO_BUTTON_UNCHECKED, size=18, color="#CBD5E1"),
+                    ft.Row([
+                        *([ft.Container(
+                            content=ft.Text("★ Recommended", size=10, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
+                            bgcolor="#10B981", padding=ft.Padding.symmetric(horizontal=6, vertical=2), border_radius=4,
+                        )] if rec_profile == "Balanced" else []),
+                        ft.Icon(ft.Icons.RADIO_BUTTON_CHECKED if app.selected_profile == "Balanced" else ft.Icons.RADIO_BUTTON_UNCHECKED, size=18, color="#DC2626" if app.selected_profile == "Balanced" else "#CBD5E1"),
+                    ], spacing=6),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Text("Balanced", size=16, weight=ft.FontWeight.BOLD, color="#0F172A"),
                 ft.Text("Recommended for everyday use and trusted offices.", size=12, color="#64748B"),
             ], spacing=6),
-            bgcolor="#FFFFFF" if app.selected_profile != "Balanced" else "#FEF2F2",
+            bgcolor="#FEF2F2" if app.selected_profile == "Balanced" else "#FFFFFF",
             border=ft.Border.all(2 if app.selected_profile == "Balanced" else 1, "#DC2626" if app.selected_profile == "Balanced" else "#E2E8F0"),
             border_radius=12, padding=16, expand=1, on_click=lambda e: select_profile("Balanced"),
         ),
@@ -79,10 +88,10 @@ def render_profile_screen(app) -> ft.Container:
                 ft.Row([
                     ft.Icon(ft.Icons.WIFI_LOCK_ROUNDED, size=24, color="#DC2626"),
                     ft.Row([
-                        ft.Container(
+                        *([ft.Container(
                             content=ft.Text("★ Recommended", size=10, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
                             bgcolor="#DC2626", padding=ft.Padding.symmetric(horizontal=6, vertical=2), border_radius=4,
-                        ),
+                        )] if rec_profile == "Public Wi-Fi" else []),
                         ft.Icon(ft.Icons.RADIO_BUTTON_CHECKED if app.selected_profile == "Public Wi-Fi" else ft.Icons.RADIO_BUTTON_UNCHECKED, size=18, color="#DC2626" if app.selected_profile == "Public Wi-Fi" else "#CBD5E1"),
                     ], spacing=6)
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -108,13 +117,20 @@ def render_profile_screen(app) -> ft.Container:
         ),
     ], spacing=16)
 
+    if app.selected_profile == "Balanced":
+        profile_desc = "Relaxed thresholds tuned for everyday use to minimize false positives on trusted networks."
+    elif app.selected_profile == "Custom":
+        profile_desc = "Customizable rules and parameter thresholds tailored to your specific environment."
+    else:
+        profile_desc = "Enhanced sensitivity tuned for shared, public, and unfamiliar networks."
+
     rules_panel = ft.Container(
         content=ft.Column([
             ft.Row([
                 ft.Icon(ft.Icons.WIFI_ROUNDED, color="#DC2626", size=18),
                 ft.Text(f"{app.selected_profile} Profile", size=16, weight=ft.FontWeight.BOLD, color="#0F172A"),
             ], spacing=8),
-            ft.Text("Enhanced detection tuned for shared and untrusted networks.", size=12, color="#64748B"),
+            ft.Text(profile_desc, size=12, color="#64748B"),
             ft.Divider(color="#E2E8F0", height=20),
             ft.Row([
                 ft.Column([
@@ -127,14 +143,15 @@ def render_profile_screen(app) -> ft.Container:
                 ft.VerticalDivider(color="#E2E8F0", width=24),
                 ft.Column([
                     ft.Text("PARAMETERS", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8"),
-                    _make_param_field(app, "Traffic Threshold", "100", "packets/sec", "traffic"),
-                    _make_param_field(app, "Port Threshold", "15", "ports / 10 sec", "port"),
-                    _make_param_field(app, "ARP Window", "5", "minutes", "arp_window"),
+                    _make_param_field(app, "Traffic Threshold", app.thresholds.get("traffic", "250" if app.selected_profile == "Balanced" else "100"), "packets/sec", "traffic"),
+                    _make_param_field(app, "Port Threshold", app.thresholds.get("port", "30" if app.selected_profile == "Balanced" else "15"), "ports / 10 sec", "port"),
+                    _make_param_field(app, "ARP Window", app.thresholds.get("arp_window", "10" if app.selected_profile == "Balanced" else "5"), "minutes", "arp_window"),
                 ], expand=1, spacing=14)
             ], expand=True),
         ]),
         bgcolor="#FFFFFF", padding=24, border_radius=14, border=ft.Border.all(1, "#E2E8F0"), expand=True,
     )
+
 
     return ft.Container(
         content=ft.Column([

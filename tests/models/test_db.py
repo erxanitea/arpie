@@ -145,3 +145,32 @@ def test_authenticate_does_not_leak_credential_material():
     finally:
         if os.path.exists(db_path):
             os.remove(db_path)
+
+
+def test_update_event_status():
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    try:
+        db = Database(db_path)
+        op_id = db.create_operator("alice", "alice@example.com", "passWord123")
+        session_id = db.start_session("TestSSID", "trusted", "wlan0", operator_id=op_id)
+        ev_id = db.log_event(
+            session_id, "arp_spoof", "192.168.1.1", "192.168.1.1", "high",
+            0.87, 85, {"reason": "2 MACs"}, "Seal host",
+        )
+        events = db.get_events(session_id)
+        assert len(events) == 1
+        assert events[0]["status"] == "NEW"
+        assert ev_id is not None
+
+        db.update_event_status(ev_id, "ACKNOWLEDGED")
+        events_after = db.get_events(session_id)
+        assert events_after[0]["status"] == "ACKNOWLEDGED"
+
+        db.update_event_status(ev_id, "RESOLVED")
+        events_resolved = db.get_events(session_id)
+        assert events_resolved[0]["status"] == "RESOLVED"
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
