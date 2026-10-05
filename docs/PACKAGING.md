@@ -48,16 +48,16 @@ Flet 0.80+ builds native desktop bundles via Flutter. This is the supported path
 and produces the smallest, most reliable result.
 
 **One-time toolchain:** install the [Flutter SDK](https://docs.flutter.dev/get-started/install)
-(stable channel) and the platform toolchain (Visual Studio C++ workload on
+(Flet 0.86.5 currently requires Flutter 3.44.8) and the platform toolchain (Visual Studio C++ workload on
 Windows; Xcode on macOS; `clang`/`ninja`/`libgtk-3-dev` on Linux). Then:
 
 ```bash
 pip install -r requirements.txt
 
 # Build for the OS you are currently on:
-flet build windows --project Arpie
-flet build macos   --project Arpie
-flet build linux   --project Arpie
+flet build windows --project Arpie --yes
+flet build macos   --project Arpie --yes
+flet build linux   --project Arpie --yes
 ```
 
 Notes:

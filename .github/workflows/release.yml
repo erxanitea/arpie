@@ -40,7 +40,7 @@ jobs:
       - name: Set up Flutter (required by `flet build`)
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          channel: stable
+          flutter-version: "3.44.8"
 
       - name: Linux build deps
         if: matrix.target == 'linux'
@@ -55,6 +55,8 @@ jobs:
         run: >-
           flet build ${{ matrix.target }}
           --project Arpie
+          --yes
+          --skip-flutter-doctor
           --exclude 'docs/course-deliverables'
 
       - name: Package artifact
