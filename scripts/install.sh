@@ -30,7 +30,18 @@ curl -fL "$asset_url" -o "$archive"
 mkdir -p "$tmp_dir/package" "$BIN_DIR"
 tar -xzf "$archive" -C "$tmp_dir/package"
 
-executable="$(find "$tmp_dir/package" -type f -perm -u+x -print -quit)"
+find_executable() {
+    local target_dir="$1"
+    if [ -x "$target_dir/arpie" ]; then
+        printf '%s/arpie\n' "$target_dir"
+    elif [ -x "$target_dir/Arpie" ]; then
+        printf '%s/Arpie\n' "$target_dir"
+    else
+        find "$target_dir" -maxdepth 2 -type f -perm -u+x ! -name "*.so*" -print -quit
+    fi
+}
+
+executable="$(find_executable "$tmp_dir/package")"
 if [ -z "$executable" ]; then
     printf 'The Linux package does not contain an executable file.\n' >&2
     exit 1
@@ -39,7 +50,7 @@ fi
 rm -rf "$INSTALL_ROOT"
 mkdir -p "$INSTALL_ROOT"
 cp -a "$tmp_dir/package/." "$INSTALL_ROOT/"
-installed_executable="$(find "$INSTALL_ROOT" -type f -perm -u+x -print -quit)"
+installed_executable="$(find_executable "$INSTALL_ROOT")"
 ln -sfn "$installed_executable" "$BIN_DIR/$APP_NAME"
 
 printf '\nArpie installed successfully.\n'

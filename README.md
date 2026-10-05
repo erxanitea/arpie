@@ -15,7 +15,7 @@ for your operating system:
 | System | Download |
 |---|---|
 | Linux | `arpie-linux.tar.gz` |
-| Windows | `arpie-windows.zip` |
+| Windows | `arpie-windows-setup.exe` (installer) or `arpie-windows.zip` (portable) |
 | macOS | `arpie-macos.tar.gz` |
 
 After downloading, open the application. No Git, Python, virtual environment,

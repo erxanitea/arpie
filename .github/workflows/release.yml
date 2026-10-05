@@ -73,10 +73,26 @@ jobs:
             tar -czf ../../arpie-${{ matrix.target }}.tar.gz ./*
           fi
 
+      - name: Build Windows installer
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue)?.Source
+          if (-not $iscc) {
+            $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+            $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc "/DMyAppVersion=$version" packaging/windows/installer.iss
+
       - name: Upload to release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             arpie-${{ matrix.target }}.zip
             arpie-${{ matrix.target }}.tar.gz
-          fail_on_unmatched_files: true
+            arpie-windows-setup.exe
+          fail_on_unmatched_files: false

@@ -11,7 +11,7 @@ Users download the compiled desktop package from the **Releases** page. They do
 not clone the repository and do not need Python or Git:
 
 - `arpie-linux.tar.gz` for Linux
-- `arpie-windows.zip` for Windows
+- `arpie-windows-setup.exe` (installer) or `arpie-windows.zip` (portable) for Windows
 - `arpie-macos.tar.gz` for macOS
 
 The repository source is for maintainers, developers, evaluators, and controlled
