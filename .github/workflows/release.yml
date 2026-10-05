@@ -55,7 +55,6 @@ jobs:
         run: >-
           flet build ${{ matrix.target }}
           --project Arpie
-          --include-packages flet_desktop
           --exclude 'docs/course-deliverables'
 
       - name: Package artifact

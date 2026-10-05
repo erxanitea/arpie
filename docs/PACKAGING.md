@@ -5,6 +5,18 @@ their desktop. This guide covers building it, and — just as important — the
 platform realities (privileges, Npcap, antivirus, code signing) that decide
 whether that binary actually works on someone else's machine.
 
+## What users download
+
+Users download the compiled desktop package from the **Releases** page. They do
+not clone the repository and do not need Python or Git:
+
+- `arpie-linux.tar.gz` for Linux
+- `arpie-windows.zip` for Windows
+- `arpie-macos.tar.gz` for macOS
+
+The repository source is for maintainers, developers, evaluators, and controlled
+demo testing. **Code → Download ZIP** is not the end-user installation method.
+
 > **Read this first (honest expectations):** Arpie sniffs raw packets and edits
 > firewall rules. That is an unavoidable part of what an IDS does, and it means
 > (a) it must run **elevated**, and (b) unsigned builds will trigger SmartScreen
@@ -43,17 +55,17 @@ Windows; Xcode on macOS; `clang`/`ninja`/`libgtk-3-dev` on Linux). Then:
 pip install -r requirements.txt
 
 # Build for the OS you are currently on:
-flet build windows --project Arpie --include-packages flet_desktop
-flet build macos   --project Arpie --include-packages flet_desktop
-flet build linux   --project Arpie --include-packages flet_desktop
+flet build windows --project Arpie
+flet build macos   --project Arpie
+flet build linux   --project Arpie
 ```
 
 Notes:
 - `flet build <os>` only builds for the OS it runs on — you need one runner per
   target (that is what the release workflow does).
-- Bundle the `assets/` folder and `sample_pcaps/` so the logo and demo captures
-  ship with the app; add them under the `assets` key in a `pyproject`/`flet`
-  config or via `--include-data`, per your Flet version's docs.
+- The current Flet CLI includes the app's project files in the bundle. Verify
+  that `assets/logo.png` and `sample_pcaps/` are present in the first release
+  artifact; exclude documentation-only files such as `docs/course-deliverables/`.
 - The canonical entry point is `python -m arpie`; `python main.py` remains a
   compatibility launcher.
 

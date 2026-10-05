@@ -12,12 +12,17 @@ and optional host containment.
 For normal users, download the latest desktop package from **GitHub Releases**
 for your operating system:
 
-- Linux
-- Windows
-- macOS
+| System | Download |
+|---|---|
+| Linux | `arpie-linux.tar.gz` |
+| Windows | `arpie-windows.zip` |
+| macOS | `arpie-macos.tar.gz` |
 
 After downloading, open the application. No Git, Python, virtual environment,
 or source checkout is required.
+
+Do **not** use **Code → Download ZIP** for normal installation. That downloads
+the developer source repository, not the desktop application.
 
 If the Releases page is empty, the first release has not been built yet. A
 maintainer must push a version tag such as `v0.1.0`; the release workflow then
@@ -34,7 +39,8 @@ operating-system permissions.
 ## Developer and Demo Setup
 
 Use the source setup only for development, academic evaluation, or controlled
-attack simulation.
+attack simulation. Maintainers use this path to build the desktop packages that
+appear under GitHub Releases.
 
 ```bash
 git clone https://github.com/<your-username>/arpie.git
