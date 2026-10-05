@@ -5,6 +5,7 @@ flet>=0.80,<1.0
 requests>=2.31.0
 reportlab>=4.0.0
 pytest>=7.4.0
+keyring>=25.0.0
 
 # Optional: improves gateway detection on some platforms.
 # If unavailable, network_context.py falls back to CLI parsing.

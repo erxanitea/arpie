@@ -154,19 +154,9 @@ def render_alerts_view(app) -> ft.Column:
         sel_src = sel.get("source", "Unknown")
 
         def quick_seal(e, ip=sel_src):
+            from arpie.views.dialogs import show_seal_dialog
             if ip and ip != "Unknown":
-                if ip not in app.active_blocks:
-                    app.active_blocks.append(ip)
-                if app.session_id and not app.seal_mgr:
-                    from arpie.security import SealManager
-                    app.seal_mgr = SealManager(app.db, app.session_id)
-                if app.seal_mgr:
-                    res = app.seal_mgr.seal(ip, event_id=None, confirmed_by_user=True)
-                    app.status_toast = f"Host {ip} isolated: {res.message}"
-                else:
-                    app.status_toast = f"Host {ip} isolated via 1-Click Seal Mode."
-            app.update_view_content()
-            app.page.update()
+                show_seal_dialog(app, target_ip=ip, event_id=sel.get("id"))
 
         from arpie.views.components.evidence_drawer import build_evidence_drawer
         evidence_drawer = build_evidence_drawer(app, sel, close_drawer, quick_seal)

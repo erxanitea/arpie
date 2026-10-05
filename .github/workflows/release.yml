@@ -52,7 +52,11 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build desktop bundle
-        run: flet build ${{ matrix.target }} --project Arpie --include-packages flet_desktop
+        run: >-
+          flet build ${{ matrix.target }}
+          --project Arpie
+          --include-packages flet_desktop
+          --exclude 'docs/course-deliverables'
 
       - name: Package artifact
         shell: bash

@@ -17,6 +17,7 @@ import platform
 import subprocess
 import threading
 import time
+import ipaddress
 from dataclasses import dataclass
 from typing import Optional
 
@@ -42,6 +43,13 @@ class SealManager:
     def seal(self, target_ip: str, event_id: Optional[int], confirmed_by_user: bool) -> SealResult:
         if not confirmed_by_user:
             return SealResult(False, "Seal Mode requires explicit user confirmation.")
+        try:
+            address = ipaddress.ip_address(target_ip)
+        except ValueError:
+            return SealResult(False, f"Invalid host address: {target_ip}")
+        if (address.is_loopback or address.is_unspecified or address.is_multicast
+                or address.is_reserved or address.is_link_local):
+            return SealResult(False, f"Refusing to block unsafe address: {target_ip}")
 
         result = self._apply_block(target_ip)
         self.db.log_action(
@@ -64,7 +72,8 @@ class SealManager:
             self.session_id, event_id, action="unseal", target=target_ip,
             confirmed_by_user=confirmed_by_user, notes=note,
         )
-        self.db.clear_seal(target_ip)
+        if result.success:
+            self.db.clear_seal(target_ip)
         timer = self._sealed_targets.pop(target_ip, None)
         if timer:
             timer.cancel()
@@ -111,14 +120,14 @@ class SealManager:
         try:
             if system == "Windows":
                 subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={rule}"],
-                                check=False, capture_output=True, timeout=10)
+                                check=True, capture_output=True, timeout=10)
                 subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={rule}_out"],
-                                check=False, capture_output=True, timeout=10)
+                                check=True, capture_output=True, timeout=10)
             elif system == "Linux":
                 subprocess.run(["iptables", "-D", "INPUT", "-s", target_ip, "-j", "DROP"],
-                                check=False, capture_output=True, timeout=10)
+                                check=True, capture_output=True, timeout=10)
                 subprocess.run(["iptables", "-D", "OUTPUT", "-d", target_ip, "-j", "DROP"],
-                                check=False, capture_output=True, timeout=10)
+                                check=True, capture_output=True, timeout=10)
             else:
                 return SealResult(False, f"Seal Mode not implemented for platform: {system}")
             return SealResult(True, f"Restored connectivity to {target_ip}.")

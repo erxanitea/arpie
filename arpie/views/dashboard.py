@@ -120,7 +120,7 @@ def render_dashboard_view(app) -> ft.Column:
 
     alert_ring = ft.Container(
         content=ft.Stack([
-            ft.ProgressRing(value=min(1.0, total_alerts / max(total_alerts, 1)), stroke_width=7, color="#D97706", bgcolor="#FEF3C7", width=54, height=54),
+            ft.ProgressRing(value=min(1.0, total_alerts / 10), stroke_width=7, color="#D97706", bgcolor="#FEF3C7", width=54, height=54),
             ft.Container(
                 content=ft.Icon(ft.Icons.NOTIFICATIONS_ACTIVE_ROUNDED, size=18, color="#D97706"),
                 alignment=ft.Alignment(0, 0),
@@ -149,9 +149,10 @@ def render_dashboard_view(app) -> ft.Column:
     )
 
     proto_text = _compute_protocol_stats(app.packet_log_stream)
+    packet_ratio = min(1.0, app.packets_count / 1000) if app.packets_count else 0.0
     packet_ring = ft.Container(
         content=ft.Stack([
-            ft.ProgressRing(value=0.88, stroke_width=7, color="#0284C7", bgcolor="#E0F2FE", width=54, height=54),
+            ft.ProgressRing(value=packet_ratio, stroke_width=7, color="#0284C7", bgcolor="#E0F2FE", width=54, height=54),
             ft.Container(
                 content=ft.Icon(ft.Icons.DATA_SAVER_ON_ROUNDED, size=18, color="#0284C7"),
                 alignment=ft.Alignment(0, 0),
@@ -175,11 +176,13 @@ def render_dashboard_view(app) -> ft.Column:
 
     active_rules = sum(1 for v in app.detection_rules.values() if v)
     total_rules = len(app.detection_rules)
+    engine_ratio = active_rules / total_rules if total_rules else 0.0
+    engine_color = "#10B981" if app.is_monitoring and active_rules else "#94A3B8"
     engine_ring = ft.Container(
         content=ft.Stack([
-            ft.ProgressRing(value=1.0, stroke_width=7, color="#10B981", bgcolor="#ECFDF5", width=54, height=54),
+            ft.ProgressRing(value=engine_ratio, stroke_width=7, color=engine_color, bgcolor="#ECFDF5", width=54, height=54),
             ft.Container(
-                content=ft.Icon(ft.Icons.SHIELD_ROUNDED, size=18, color="#10B981"),
+                content=ft.Icon(ft.Icons.SHIELD_ROUNDED, size=18, color=engine_color),
                 alignment=ft.Alignment(0, 0),
                 width=54, height=54,
             )

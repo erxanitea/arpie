@@ -26,9 +26,9 @@ class AuthMixin(MixinBase):
         self.db.set_recovery_codes(username, None)
 
     def save_operator_credentials(self, username: str, current_pw: str, new_pw: str) -> tuple[bool, str]:
-        username = (username or "").strip()
-        if not username:
-            return False, "Operator username cannot be empty."
+        display_name = (username or "").strip()
+        if not display_name:
+            return False, "Display name cannot be empty."
 
         operator = self.db.authenticate_operator(self.operator_username, current_pw)
         if not operator:
@@ -39,12 +39,6 @@ class AuthMixin(MixinBase):
                 return False, "New password must be at least 4 characters."
             self.db.update_operator_password(self.operator_username, new_pw)
 
-        if username != self.operator_username:
-            existing = self.db.get_operator(username)
-            if existing:
-                return False, f"Username '{username}' is already taken."
-
-        self.db.update_operator_display_name(self.operator_username, username)
-        self.operator_username = username
-        self.user_name = username
-        return True, f"Operator credentials for '{username}' updated successfully."
+        self.db.update_operator_display_name(self.operator_username, display_name)
+        self.user_name = display_name
+        return True, f"Account details for '{self.operator_username}' updated successfully."

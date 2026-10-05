@@ -3,7 +3,7 @@
 import flet as ft
 
 
-def show_seal_dialog(app):
+def show_seal_dialog(app, target_ip=None, event_id=None):
     dlg = ft.AlertDialog(
         title=ft.Row([
             ft.Icon(ft.Icons.SHIELD_ROUNDED, size=22, color="#DC2626"),
@@ -31,7 +31,7 @@ def show_seal_dialog(app):
                 "Confirm & Seal Network",
                 icon=ft.Icons.LOCK_ROUNDED,
                 style=ft.ButtonStyle(bgcolor="#DC2626", color="#FFFFFF"),
-                on_click=lambda e: app.activate_seal(dlg),
+                on_click=lambda e: app.activate_seal(dlg, target_ip=target_ip, event_id=event_id),
             ),
         ],
     )

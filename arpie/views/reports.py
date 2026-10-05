@@ -164,7 +164,7 @@ def render_reports_view(app) -> ft.Column:
         ft.Container(
             content=ft.Column([
                 ft.Text("Forensic Incident Reports & Session Exports", size=20, weight=ft.FontWeight.BOLD, color="#0F172A"),
-                ft.Text(f"Logged in as: {app.user_name} ({app.operator_username or 'admin'}) · Historical sessions and evidence logs", size=13, color="#64748B"),
+                ft.Text(f"Logged in as: {app.user_name or app.operator_username or 'Operator'} · Historical sessions and evidence logs", size=13, color="#64748B"),
                 ft.Divider(color="#E2E8F0", height=16),
                 status_widget,
                 export_dir_widget,

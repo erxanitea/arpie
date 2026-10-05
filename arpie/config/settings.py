@@ -8,13 +8,13 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from arpie.config.thresholds import DetectionThresholds, SealModeConfig, ThreatIntelConfig
+from arpie.config.thresholds import DetectionThresholds, SealModeConfig, ThreatIntelConfig, _default_db_path
 
 
 @dataclass
 class AppConfig:
     app_name: str = "Arpie"
-    db_path: str = os.environ.get("ARPIE_DB_PATH", "arpie.db")
+    db_path: str = field(default_factory=_default_db_path)
     interface: str = os.environ.get("ARPIE_IFACE", "")
     export_dir: str = os.environ.get("ARPIE_EXPORT_DIR", "")
     thresholds: DetectionThresholds = field(default_factory=DetectionThresholds)

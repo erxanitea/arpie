@@ -1,4 +1,5 @@
 import flet as ft
+import platform
 from arpie.views.dialogs import show_seal_dialog
 
 
@@ -7,6 +8,7 @@ def render_seal_view(app) -> ft.Column:
         show_seal_dialog(app)
 
     block_items: list[ft.Control] = []
+    firewall_name = "netsh advfirewall" if platform.system() == "Windows" else "iptables"
     for ip in app.active_blocks:
         block_items.append(
             ft.Container(
@@ -15,7 +17,7 @@ def render_seal_view(app) -> ft.Column:
                         ft.Icon(ft.Icons.BLOCK_ROUNDED, color="#DC2626", size=18),
                         ft.Column([
                             ft.Text(f"Hostile Attacker: {ip}", size=14, weight=ft.FontWeight.BOLD, color="#0F172A"),
-                            ft.Text("Rule: DROP ALL INBOUND/OUTBOUND (iptables -A INPUT -s ... -j DROP)", size=12, color="#64748B"),
+                            ft.Text(f"Firewall rule: {firewall_name} · inbound and outbound host block", size=12, color="#64748B"),
                         ], spacing=2)
                     ], spacing=10),
                     ft.OutlinedButton("Unblock", icon=ft.Icons.LOCK_OPEN_ROUNDED, on_click=lambda e, rip=ip: app.unblock_ip(rip)),
@@ -54,8 +56,8 @@ def render_seal_view(app) -> ft.Column:
                     ft.Container(
                         content=ft.Column([
                             ft.Text("FIREWALL STATE", size=11, weight=ft.FontWeight.BOLD, color="#94A3B8"),
-                            ft.Text("Reversible & Safe", size=20, weight=ft.FontWeight.BOLD, color="#10B981"),
-                            ft.Text("All routing tables restore automatically on session teardown.", size=12, color="#64748B"),
+                            ft.Text("Reversible containment", size=20, weight=ft.FontWeight.BOLD, color="#10B981"),
+                            ft.Text("Successful rules are logged and scheduled for automatic restore.", size=12, color="#64748B"),
                         ], spacing=4),
                         bgcolor="#ECFDF5", border=ft.Border.all(1, "#A7F3D0"), border_radius=10, padding=16, expand=1,
                     )

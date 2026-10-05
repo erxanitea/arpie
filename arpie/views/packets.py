@@ -39,7 +39,7 @@ def render_packets_view(app) -> ft.Column:
 
     content_items: list[ft.Control] = []
     if is_evaluator:
-        demo_pcap = str(Path("sample_pcaps") / "demo_attack.pcap")
+        demo_pcap = str(Path(__file__).resolve().parents[2] / "sample_pcaps" / "demo_attack.pcap")
         pcap_input = ft.TextField(
             label="Offline PCAP Attack Replay (Evaluator Tool)",
             value=demo_pcap,

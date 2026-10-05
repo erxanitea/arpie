@@ -11,8 +11,8 @@ def render_settings_view(app) -> ft.Column:
 
     # --- Operator Credentials Fields ---
     op_user_field = ft.TextField(
-        label="Username",
-        value=app.operator_username,
+        label="Display Name",
+        value=app.user_name or app.operator_username,
         border_radius=8,
         dense=True,
         prefix_icon=ft.Icons.PERSON_OUTLINE_ROUNDED,
@@ -40,7 +40,7 @@ def render_settings_view(app) -> ft.Column:
     def on_update_credentials(e):
         cur_pw = current_pw_field.value or ""
         new_pw = new_pw_field.value or ""
-        new_uname = op_user_field.value or ""
+        new_display_name = (op_user_field.value or "").strip()
 
         if not cur_pw:
             op_status_text.value = "Current password is required to verify identity."
@@ -67,10 +67,9 @@ def render_settings_view(app) -> ft.Column:
                 return
             app.db.update_operator_password(app.operator_username, new_pw)
 
-        if new_uname and new_uname != app.operator_username:
-            app.db.update_operator_display_name(app.operator_username, new_uname)
-            app.operator_username = new_uname
-            app.user_name = new_uname
+        if new_display_name and new_display_name != app.user_name:
+            app.db.update_operator_display_name(app.operator_username, new_display_name)
+            app.user_name = new_display_name
 
         op_status_text.value = "Credentials successfully updated!"
         op_status_text.color = "#10B981"

@@ -71,16 +71,6 @@ def render_users_view(app) -> ft.Column:
         app.user_search_query = ""
 
     operators_list = app.db.list_operators() if hasattr(app.db, "list_operators") else []
-    if not operators_list:
-        operators_list = [{
-            "id": app.operator_id or 1,
-            "display_name": app.user_name or "Operator",
-            "username": app.operator_username or "admin",
-            "email": app.operator_email or "admin@arpie.local",
-            "role": app.user_role,
-            "created_at": time.time(),
-            "last_login_at": time.time(),
-        }]
 
     total_count = len(operators_list)
     evaluator_count = sum(1 for o in operators_list if "Evaluator" in str(o.get("role", "")))

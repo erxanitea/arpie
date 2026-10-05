@@ -20,6 +20,8 @@ def render_inventory_view(app) -> ft.Column:
     trust_fg = "#10B981" if is_trusted else "#DC2626"
     trust_icon = ft.Icons.VERIFIED_USER_ROUNDED if is_trusted else ft.Icons.GPP_MAYBE_ROUNDED
 
+    transport_label = "Wi-Fi infrastructure" if iface.lower().startswith(("wl", "wi", "ath")) else "Network interface"
+
     # --- Card 1: Network Context Assessment (Required Entity #3) ---
     def _context_cell(label: str, value: str, sub: str, icon) -> ft.Container:
         return ft.Container(
@@ -57,12 +59,12 @@ def render_inventory_view(app) -> ft.Column:
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Divider(color="#E2E8F0", height=12),
             ft.Row([
-                _context_cell("SSID / NETWORK NAME", ssid_name, "802.11 Wi-Fi Infrastructure", ft.Icons.WIFI_ROUNDED),
-                _context_cell("GATEWAY IP & MAC", f"{gw_ip} ({gw_mac})", "Validated Default Gateway Binding", ft.Icons.DNS_ROUNDED),
+                _context_cell("SSID / NETWORK NAME", ssid_name, transport_label, ft.Icons.WIFI_ROUNDED),
+                _context_cell("GATEWAY IP & MAC", f"{gw_ip} ({gw_mac})", "Observed gateway binding", ft.Icons.DNS_ROUNDED),
             ], spacing=12),
             ft.Row([
                 _context_cell("SUBNET CIDR", subnet, "Local Broadcast Domain Scope", ft.Icons.HUB_ROUNDED),
-                _context_cell("THIS ENDPOINT (attacker --target)", local_ip, f"Interface {iface}", ft.Icons.SPEED_ROUNDED),
+                _context_cell("THIS ENDPOINT", local_ip, f"Use as simulator target · interface {iface}", ft.Icons.SPEED_ROUNDED),
             ], spacing=12),
         ], spacing=10),
         bgcolor="#FFFFFF", border=ft.Border.all(1, "#E2E8F0"), border_radius=12, padding=16,
@@ -131,7 +133,10 @@ def render_inventory_view(app) -> ft.Column:
             iface = ctx.interface if ctx else None
             _, cidr = local_ipv4_and_cidr(iface)
             if not cidr:
-                cidr = "192.168.1.0/24"
+                scan_status.value = "Scan unavailable: no subnet could be determined for this interface."
+                scan_spinner.visible = False
+                app.page.update()
+                return
 
             hosts = arp_sweep(cidr, iface=iface, timeout=3)
             existing_ips = {d.get("ip") for d in app.devices_inventory if isinstance(d, dict) and d.get("ip")}
@@ -142,12 +147,12 @@ def render_inventory_view(app) -> ft.Column:
                     vendor = mac_vendor(h["mac"])
                     app.devices_inventory.append({
                         "id": str(len(app.devices_inventory) + 1),
-                        "hostname": f"Host-{h['ip'].split('.')[-1]}",
+                        "hostname": h["ip"],
                         "ip": h["ip"],
                         "mac": h["mac"],
                         "vendor": vendor,
                         "type": "Endpoint",
-                        "status": "Discovered",
+                        "status": "Discovered via ARP",
                         "last_seen": now,
                     })
                     added += 1
