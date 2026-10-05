@@ -17,6 +17,22 @@ not clone the repository and do not need Python or Git:
 The repository source is for maintainers, developers, evaluators, and controlled
 demo testing. **Code → Download ZIP** is not the end-user installation method.
 
+### Linux terminal installer
+
+The repository includes `scripts/install.sh`. After a GitHub Release exists,
+Linux users can install the latest package without Git, Python, or `sudo`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/erxanitea/arpie/main/scripts/install.sh \
+  -o arpie-install.sh
+bash arpie-install.sh
+arpie
+```
+
+It installs the application under `~/.local/opt/arpie` and creates the launcher
+at `~/.local/bin/arpie`. The installer intentionally does not change firewall
+permissions; live capture and Seal Mode request those permissions separately.
+
 > **Read this first (honest expectations):** Arpie sniffs raw packets and edits
 > firewall rules. That is an unavoidable part of what an IDS does, and it means
 > (a) it must run **elevated**, and (b) unsigned builds will trigger SmartScreen

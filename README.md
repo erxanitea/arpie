@@ -36,6 +36,21 @@ For live monitoring, follow the first-run instructions in
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Live capture and Seal Mode require
 operating-system permissions.
 
+### Linux terminal install
+
+After the first Linux release is published, Linux users can install the latest
+desktop package with:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/erxanitea/arpie/main/scripts/install.sh \
+	-o arpie-install.sh
+bash arpie-install.sh
+arpie
+```
+
+The installer uses the user's home directory and does not require `sudo`.
+Live capture and Seal Mode may still require operating-system permissions.
+
 ## Developer and Demo Setup
 
 Use the source setup only for development, academic evaluation, or controlled

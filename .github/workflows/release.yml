@@ -52,10 +52,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build desktop bundle
+        env:
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: utf-8
         run: >-
           flet build ${{ matrix.target }}
           --project Arpie
           --yes
+          --no-rich-output
           --skip-flutter-doctor
           --exclude 'docs/course-deliverables'
 
