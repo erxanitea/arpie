@@ -117,7 +117,18 @@ your installed Flet version — the exact data-bundling flags change between Fle
 releases, and this is the one step that can't be verified without running the
 full Flutter toolchain.
 
+Before creating the first release, commit and push the reviewed source and
+workflow changes. Then create and push a semantic version tag:
+
 ```bash
+git add .
+git commit -m "Prepare Arpie v0.1.0 release"
+git push origin main
 git tag v0.1.0
 git push origin v0.1.0   # triggers the release build
 ```
+
+Monitor the **Actions** tab. The release is not complete until the Linux,
+Windows, and macOS matrix jobs finish successfully and their artifacts appear
+under **Releases**. The workflow fails when an expected artifact is missing,
+instead of silently publishing an empty release.

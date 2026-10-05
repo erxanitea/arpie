@@ -19,6 +19,10 @@ for your operating system:
 After downloading, open the application. No Git, Python, virtual environment,
 or source checkout is required.
 
+If the Releases page is empty, the first release has not been built yet. A
+maintainer must push a version tag such as `v0.1.0`; the release workflow then
+builds and uploads the platform packages automatically.
+
 Start with the bundled PCAP demo. It works without administrator privileges and
 lets you explore the interface, alerts, evidence, reports, and configuration.
 In the application, open **Packet Logs** and choose **Run Demo Capture**.

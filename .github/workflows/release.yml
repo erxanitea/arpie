@@ -74,4 +74,4 @@ jobs:
           files: |
             arpie-${{ matrix.target }}.zip
             arpie-${{ matrix.target }}.tar.gz
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
