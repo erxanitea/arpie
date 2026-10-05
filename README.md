@@ -1,9 +1,22 @@
-# Arpie - Endpoint Network Threat Defense
+<p align="center">
+  <img src="assets/logo.png" alt="Arpie Logo" width="160" />
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey.svg)](https://github.com/erxanitea/arpie/releases)
+<h1 align="center">Arpie</h1>
 
-**Protect your device on public Wi-Fi. Real-time detection. Instant containment. 100% local.**
+<p align="center">
+  <strong>Endpoint Network Threat Defense & Intrusion Detection for Public Wi-Fi</strong>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/erxanitea/arpie/releases"><img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey.svg" alt="Platform"></a>
+  <a href="https://github.com/erxanitea/arpie/releases"><img src="https://img.shields.io/github/v/release/erxanitea/arpie?color=green" alt="Latest Release"></a>
+</p>
+
+<p align="center">
+  <em>Real-time detection. Instant containment. 100% local.</em>
+</p>
 
 Arpie is a local endpoint network intrusion detection and response station: a native desktop app that monitors your network connection, spots ARP spoofing, port scans, and gateway identity tampering in real time, and seals your machine off with one-click firewall containment—never sending your private traffic outside your device.
 
