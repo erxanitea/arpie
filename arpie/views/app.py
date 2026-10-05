@@ -239,9 +239,9 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
         self.page.bgcolor = "#F8FAFC"
         self.page.padding = 0
         self.page.spacing = 0
-        self.page.window.width = 1280
-        self.page.window.height = 756
-        self.page.window.min_width = 1100
+        self.page.window.width = 1440
+        self.page.window.height = 800
+        self.page.window.min_width = 1280
         self.page.window.min_height = 700
         self.file_picker = ft.FilePicker()
         if hasattr(self.page, "services"):

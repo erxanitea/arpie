@@ -78,6 +78,38 @@ arpie
 
 ---
 
+## Uninstall
+
+Your data (alert database and reports) is kept separately from the app. Delete it too only if you want a clean slate.
+
+### Windows
+1. Open **Settings → Apps → Installed apps**, find **Arpie**, and choose **Uninstall**.
+2. *(Optional)* Delete your data folder: `%APPDATA%\Arpie`.
+3. Portable `.zip` users: just delete the extracted folder.
+
+### macOS
+1. Quit Arpie, then drag **Arpie** from **Applications** to the Trash.
+2. *(Optional)* Delete your data: `rm -rf ~/Library/Application\ Support/Arpie`.
+
+### Linux
+**Installed from the `.deb`:**
+```bash
+sudo apt remove arpie      # or: sudo dpkg -r arpie
+```
+
+**Installed with the one-line installer:**
+```bash
+systemctl --user disable --now arpie 2>/dev/null   # stop the background service, if enabled
+rm -rf ~/.local/opt/arpie ~/.local/bin/arpie
+rm -f ~/.local/share/applications/arpie.desktop \
+      ~/.local/share/icons/hicolor/256x256/apps/arpie.png \
+      ~/.config/systemd/user/arpie.service
+```
+
+*(Optional)* Delete your data on Linux: `rm -rf ~/.local/share/arpie`.
+
+---
+
 ## First Run
 
 1. **Launch Arpie** from your desktop shortcut or terminal (`arpie`).

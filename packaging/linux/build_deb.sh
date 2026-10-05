@@ -62,7 +62,10 @@ StartupNotify=true
 EOF
 chmod 644 "$STAGE_DIR/usr/share/applications/arpie.desktop"
 
-ICON_SRC="$(find assets packaging "$BUILD_DIR" -name "logo.png" -o -name "arpie-logo.png" 2>/dev/null | head -n 1 || true)"
+ICON_SRC="$(find assets packaging "$BUILD_DIR" -name "icon.png" 2>/dev/null | head -n 1 || true)"
+if [ -z "$ICON_SRC" ]; then
+    ICON_SRC="$(find assets packaging "$BUILD_DIR" -name "logo.png" -o -name "arpie-logo.png" 2>/dev/null | head -n 1 || true)"
+fi
 if [ -n "$ICON_SRC" ] && [ -f "$ICON_SRC" ]; then
     cp -f "$ICON_SRC" "$STAGE_DIR/usr/share/icons/hicolor/256x256/apps/arpie.png"
     chmod 644 "$STAGE_DIR/usr/share/icons/hicolor/256x256/apps/arpie.png"

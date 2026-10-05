@@ -59,7 +59,10 @@ ICON_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/icons/hicolor/256x256/apps"
 SYSTEMD_USER_DIR="${HOME}/.config/systemd/user"
 mkdir -p "$APPS_DIR" "$ICON_DIR" "$SYSTEMD_USER_DIR"
 
-icon_source="$(find "$INSTALL_ROOT" -maxdepth 3 -name "logo.png" -o -name "arpie-logo.png" 2>/dev/null | head -n 1 || true)"
+icon_source="$(find "$INSTALL_ROOT" -maxdepth 3 -name "icon.png" 2>/dev/null | head -n 1 || true)"
+if [ -z "$icon_source" ]; then
+    icon_source="$(find "$INSTALL_ROOT" -maxdepth 3 -name "logo.png" -o -name "arpie-logo.png" 2>/dev/null | head -n 1 || true)"
+fi
 if [ -n "$icon_source" ] && [ -f "$icon_source" ]; then
     cp -f "$icon_source" "$ICON_DIR/arpie.png"
 fi

@@ -54,6 +54,9 @@ test-results.xml
 .DS_Store
 Thumbs.db
 
+# Vagrant local VM state (machine IDs, SSH keys — not portable between hosts)
+.vagrant/
+
 # Workspace Dependency Symlinks
 /scapy
 /psutil

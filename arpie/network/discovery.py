@@ -1,5 +1,6 @@
 import ipaddress
 import platform
+import socket
 import subprocess
 from typing import Optional
 
@@ -31,7 +32,20 @@ def local_ipv4_and_cidr(interface: Optional[str] = None) -> tuple[Optional[str],
                     return ip, str(net)
                 except Exception:
                     return ip, None
-    return None, None
+    return _routed_ipv4()
+
+
+def _routed_ipv4() -> tuple[Optional[str], Optional[str]]:
+    """Fallback: ask the OS which source address it would use to reach the internet."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("192.0.2.1", 9))  # UDP connect sends no packets
+            ip = sock.getsockname()[0]
+    except OSError:
+        return None, None
+    if not ip or ip.startswith("127."):
+        return None, None
+    return ip, str(ipaddress.IPv4Network(f"{ip}/24", strict=False))
 
 
 def mac_vendor(mac: Optional[str]) -> str:
