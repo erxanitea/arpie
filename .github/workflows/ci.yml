@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Tests (${{ matrix.os }}, py${{ matrix.python-version }})
@@ -15,6 +19,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.11", "3.12"]
+        exclude:
+          # macOS arm64 runners are capacity-constrained; one version is enough
+          - os: macos-latest
+            python-version: "3.11"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
