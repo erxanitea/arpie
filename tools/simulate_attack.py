@@ -56,8 +56,13 @@ def simulate_technique_3_traffic_anomaly(target_ip: str, packet_count: int = 150
     Sends a burst of SYN packets exceeding 100 packets/sec baseline.
     """
     print(f"\n[*] [Technique 3] Sending burst of {packet_count} SYN packets to {target_ip}...")
-    packets = [IP(dst=target_ip) / TCP(dport=80, flags="S") for _ in range(packet_count)]
-    send(packets, iface=iface, verbose=False)
+    # Note: scapy's send() with a packet *list* plus iface= hits a bug in
+    # _interface_selection on some scapy builds (treats the list as one
+    # packet -> "'list' object has no attribute 'dst'"). Send one at a
+    # time instead, same pattern as technique 2's port scan.
+    for _ in range(packet_count):
+        pkt = IP(dst=target_ip) / TCP(dport=80, flags="S")
+        send(pkt, iface=iface, verbose=False)
     print(f"[+] Transmitted {packet_count} SYN packets in rapid burst (>100 pps).")
 
 

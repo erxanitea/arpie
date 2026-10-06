@@ -24,8 +24,28 @@ def send_desktop_notification(title: str, message: str, severity: str = "critica
                 urgency = "critical" if severity in {"high", "critical"} else "normal"
                 icon = "dialog-error" if severity in {"high", "critical"} else "dialog-warning"
                 cmd = [notify_send, "-a", "Arpie Endpoint NIDS", "-u", urgency, "-i", icon, title, message]
-                subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                return True
+
+                # When Arpie is launched with sudo (needed for raw packet
+                # capture), this process runs as root and has no access to
+                # the desktop's D-Bus session bus, so notify-send silently
+                # fails. Drop back to the invoking user's session via
+                # runuser (no password needed, since the caller is already
+                # root) and point it at that user's bus socket.
+                sudo_uid = os.environ.get("SUDO_UID")
+                sudo_user = os.environ.get("SUDO_USER")
+                if os.geteuid() == 0 and sudo_uid and sudo_user and shutil.which("runuser"):
+                    bus_addr = f"unix:path=/run/user/{sudo_uid}/bus"
+                    cmd = [
+                        "runuser", "-u", sudo_user, "--",
+                        "env", f"DBUS_SESSION_BUS_ADDRESS={bus_addr}", f"XDG_RUNTIME_DIR=/run/user/{sudo_uid}",
+                        *cmd,
+                    ]
+
+                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+                if result.returncode != 0:
+                    print(f"[notifications] notify-send failed (exit {result.returncode}): "
+                          f"{result.stderr.decode(errors='replace').strip()}")
+                return result.returncode == 0
 
 
         elif current_os == "Windows":

@@ -50,6 +50,7 @@ class NavigationMixin(MixinBase):
         main_area = ft.Container(
             content=ft.Column([
                 top_bar,
+                self.toast_banner,
                 self.content_area,
             ], spacing=0, expand=True),
             expand=True,
@@ -62,6 +63,22 @@ class NavigationMixin(MixinBase):
         self.current_view = vid
         self.update_view_content()
         self.page.update()
+
+    def _sync_toast_banner(self):
+        """Mirror self.status_toast into the persistent toast banner shown
+        above the content area, so action feedback (e.g. Seal Mode results)
+        is visible no matter which page the user triggered it from."""
+        message = self.status_toast or ""
+        self.toast_banner.visible = bool(message)
+        if not message:
+            return
+        failure_markers = ("failed", "unavailable", "required", "invalid", "refusing", "error")
+        is_failure = any(marker in message.lower() for marker in failure_markers)
+        self.toast_text.value = message
+        self.toast_icon.name = ft.Icons.ERROR_ROUNDED if is_failure else ft.Icons.CHECK_CIRCLE_ROUNDED
+        self.toast_icon.color = "#DC2626" if is_failure else "#10B981"
+        self.toast_banner.bgcolor = "#FEF2F2" if is_failure else "#ECFDF5"
+        self.toast_banner.border = ft.Border.all(1, "#FECACA" if is_failure else "#A7F3D0")
 
     def update_view_content(self):
         title_map = {
@@ -77,6 +94,8 @@ class NavigationMixin(MixinBase):
         title, subtitle = title_map.get(self.current_view, ("Arpie", ""))
         self.top_bar_title.value = title
         self.top_bar_subtitle.value = subtitle
+
+        self._sync_toast_banner()
 
         for vid, btn, icon_ctrl, text_ctrl, icon_on, icon_off in self.sidebar_btn_refs:
             is_active = (self.current_view == vid)

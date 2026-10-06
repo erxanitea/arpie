@@ -154,6 +154,16 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
 
         self.sidebar_btn_refs = []
         self.content_area = ft.Container(expand=True, bgcolor="#F8FAFC", padding=20)
+        # Persistent global toast, shown above whatever page is active so
+        # action feedback (e.g. Seal Mode results) is visible no matter
+        # which view the user confirmed the action from.
+        self.toast_text = ft.Text("", size=13, color="#0F172A", expand=True)
+        self.toast_icon = ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, color="#10B981", size=18)
+        self.toast_banner = ft.Container(
+            content=ft.Row([self.toast_icon, self.toast_text], spacing=8),
+            padding=12, border_radius=8, margin=ft.Margin.only(left=20, right=20, top=12),
+            visible=False,
+        )
         self.top_bar_title = ft.Text("Dashboard", size=20, weight=ft.FontWeight.BOLD, color="#0F172A")
         self.top_bar_subtitle = ft.Text("Real-time overview of your network and security status", size=12, color="#64748B")
 
