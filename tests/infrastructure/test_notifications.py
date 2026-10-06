@@ -16,7 +16,9 @@ def test_linux_notification_dispatches_when_notify_send_exists(monkeypatch):
     monkeypatch.setattr(notifications.platform, "system", lambda: "Linux")
     monkeypatch.setattr(notifications.shutil, "which", fake_which)
     monkeypatch.setattr(notifications.subprocess, "run", fake_run)
-    monkeypatch.setattr(notifications.os, "geteuid", lambda: 1000)
+    # os.geteuid is POSIX-only; the real module has no such attribute on
+    # Windows, so monkeypatch needs raising=False to add it for the test.
+    monkeypatch.setattr(notifications.os, "geteuid", lambda: 1000, raising=False)
 
     delivered = notifications.send_desktop_notification("Alert", "Test", "high")
 
@@ -44,7 +46,7 @@ def test_linux_notification_relays_through_runuser_when_run_as_root(monkeypatch)
     monkeypatch.setattr(notifications.platform, "system", lambda: "Linux")
     monkeypatch.setattr(notifications.shutil, "which", fake_which)
     monkeypatch.setattr(notifications.subprocess, "run", fake_run)
-    monkeypatch.setattr(notifications.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(notifications.os, "geteuid", lambda: 0, raising=False)
     monkeypatch.setenv("SUDO_UID", "1000")
     monkeypatch.setenv("SUDO_USER", "erxanitea")
 
@@ -62,7 +64,7 @@ def test_linux_notification_reports_failure_instead_of_swallowing_it(monkeypatch
     monkeypatch.setattr(notifications.platform, "system", lambda: "Linux")
     monkeypatch.setattr(notifications.shutil, "which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr(notifications.subprocess, "run", fake_run)
-    monkeypatch.setattr(notifications.os, "geteuid", lambda: 1000)
+    monkeypatch.setattr(notifications.os, "geteuid", lambda: 1000, raising=False)
 
     delivered = notifications.send_desktop_notification("Alert", "Test", "high")
 
