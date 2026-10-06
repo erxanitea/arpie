@@ -1,5 +1,6 @@
 import datetime
 import json
+import time
 
 from arpie.views.theme import SEVERITY_BG, SEVERITY_COLORS
 from arpie.models import Alert
@@ -16,6 +17,17 @@ class SessionRestoreMixin(MixinBase):
         if not latest:
             return
         self.session_id = latest["id"]
+        started_at = float(latest.get("started_at") or 0.0)
+        ended_at = float(latest.get("ended_at") or 0.0)
+        if started_at > 0:
+            duration = max(0, int((ended_at or time.time()) - started_at)) if ended_at else 0
+            self.accumulated_seconds = float(duration)
+            hrs = duration // 3600
+            mins = (duration % 3600) // 60
+            secs = duration % 60
+            timestr = f"{hrs:02d}:{mins:02d}:{secs:02d}"
+            self.timer_text.value = timestr
+            self.sidebar_timer_text.value = timestr
         raw_events = self.db.get_events(self.session_id)
         if raw_events:
             alerts = []

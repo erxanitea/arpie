@@ -236,6 +236,59 @@ def render_context_screen(app) -> ft.Container:
         ], spacing=8),
     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
+    iface_options = []
+    try:
+        stats = psutil.net_if_stats()
+        addrs = psutil.net_if_addrs()
+        for name, st in stats.items():
+            if name.lower().startswith("lo"):
+                continue
+            ip_str = ""
+            if name in addrs:
+                for a in addrs[name]:
+                    if a.family.name == "AF_INET":
+                        ip_str = f" ({a.address})"
+                        break
+            iface_options.append((name, f"{name}{ip_str}"))
+    except Exception:
+        pass
+
+    def on_iface_change(e):
+        selected_if = e.control.value
+        if selected_if:
+            import os
+            os.environ["ARPIE_IFACE"] = selected_if
+            if hasattr(app, "db"):
+                app.db.set_config("network.interface", selected_if)
+            app.refresh_network_context()
+            app.render()
+
+    if len(iface_options) > 1:
+        cur_val = iface if any(opt[0] == iface for opt in iface_options) else (iface_options[0][0] if iface_options else None)
+        iface_row = ft.Container(
+            content=ft.Row([
+                ft.Row([
+                    ft.Icon(ft.Icons.PUBLIC_ROUNDED, color="#64748B", size=18),
+                    ft.Text("Interface", size=13, color="#475569", weight=ft.FontWeight.W_500),
+                ], spacing=8),
+                ft.Dropdown(
+                    value=cur_val,
+                    options=[ft.dropdown.Option(opt[0], text=opt[1]) for opt in iface_options],
+                    height=34,
+                    text_size=12,
+                    content_padding=ft.Padding.symmetric(horizontal=8, vertical=4),
+                    border_color="#CBD5E1",
+                    border_radius=6,
+                    on_select=on_iface_change,
+                    dense=True,
+                ),
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=ft.Padding.symmetric(vertical=4),
+            border=ft.Border(bottom=ft.BorderSide(1, "#F1F5F9")),
+        )
+    else:
+        iface_row = _make_detail_row(ft.Icons.PUBLIC_ROUNDED, "Interface", iface)
+
     left_col = ft.Container(
         content=ft.Column([
             ft.Text("Connection Details", size=16, weight=ft.FontWeight.BOLD, color="#0F172A"),
@@ -244,7 +297,7 @@ def render_context_screen(app) -> ft.Container:
             _make_detail_row(ft.Icons.WIFI_ROUNDED, "Connected Network", ssid),
             _make_detail_row(ft.Icons.ROUTER_ROUNDED, "Gateway", gateway),
             _make_detail_row(ft.Icons.COMPUTER_ROUNDED, "Local IP", local_ip),
-            _make_detail_row(ft.Icons.PUBLIC_ROUNDED, "Interface", iface),
+            iface_row,
         ], spacing=10),
         bgcolor="#FFFFFF",
         padding=24,

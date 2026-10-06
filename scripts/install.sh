@@ -98,9 +98,16 @@ RestartSec=5s
 WantedBy=default.target
 EOF
 
+if command -v setcap >/dev/null 2>&1; then
+    sudo setcap cap_net_raw,cap_net_admin=eip "$installed_executable" 2>/dev/null || true
+fi
+
 printf '\nArpie installed successfully.\n'
 printf '• Run directly from terminal: arpie\n'
 printf '• Desktop app entry created in your Linux Application Menu (Search "Arpie" or pin to dock)\n'
+printf '• For live packet capture & NIDS attack detection without sudo:\n'
+printf '    sudo setcap cap_net_raw,cap_net_admin=eip %s\n' "$installed_executable"
+printf '  Or launch directly with: sudo arpie\n'
 printf '• To run Arpie permanently in the background as a systemd service:\n'
 printf '    systemctl --user daemon-reload\n'
 printf '    systemctl --user enable --now arpie\n\n'
@@ -108,6 +115,4 @@ if ! printf '%s' ":$PATH:" | grep -q ":$BIN_DIR:"; then
     printf 'Add %s to PATH if needed:\n' "$BIN_DIR"
     printf '  export PATH="$HOME/.local/bin:$PATH"\n'
 fi
-printf 'PCAP mode does not require administrator privileges.\n'
-printf 'Live capture and Seal Mode require platform permissions.\n'
 

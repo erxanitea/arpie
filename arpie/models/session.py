@@ -32,7 +32,7 @@ class SessionMixin(MixinBase):
                     "LEFT JOIN events e ON s.id = e.session_id "
                     "WHERE s.operator_id = ? "
                     "GROUP BY s.id "
-                    "ORDER BY ev_cnt DESC, s.started_at DESC LIMIT 1",
+                    "ORDER BY s.started_at DESC, s.id DESC LIMIT 1",
                     (operator_id,),
                 )
             else:
@@ -40,7 +40,7 @@ class SessionMixin(MixinBase):
                     "SELECT s.*, COUNT(e.id) as ev_cnt FROM sessions s "
                     "LEFT JOIN events e ON s.id = e.session_id "
                     "GROUP BY s.id "
-                    "ORDER BY ev_cnt DESC, s.started_at DESC LIMIT 1"
+                    "ORDER BY s.started_at DESC, s.id DESC LIMIT 1"
                 )
             row = cur.fetchone()
             return dict(row) if row else None

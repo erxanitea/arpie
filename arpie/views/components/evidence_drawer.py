@@ -89,14 +89,14 @@ def build_evidence_drawer(app, alert_item: dict, on_close, on_seal) -> ft.Contai
         content_padding=ft.Padding.symmetric(horizontal=8, vertical=4),
         border_color="#CBD5E1",
         border_radius=6,
-        on_change=on_status_change,
+        on_select=on_status_change,
     )
 
-    threat_intel_content = []
+    threat_intel_content: list[ft.Control] = []
     if not is_public:
         threat_intel_content = [
             ft.Row([
-                ft.Icon(ft.Icons.HOME_ROUTER_ROUNDED, size=15, color="#64748B"),
+                ft.Icon(ft.Icons.ROUTER_ROUNDED, size=15, color="#64748B"),
                 ft.Text("Threat Intelligence", size=12, weight=ft.FontWeight.BOLD, color="#0F172A"),
             ], spacing=6),
             ft.Row([

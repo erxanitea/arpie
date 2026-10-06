@@ -21,3 +21,18 @@ def test_monitoring_engine_uses_configured_thresholds_and_rule_switches():
     assert {type(rule).__name__ for rule in engine.rules} == {"ArpIdentityRule", "TrafficRateRule"}
     assert engine.rules[0].window == 600
     assert engine.rules[1].pps_threshold == 250
+
+
+def test_start_capture_safe_permission_error_preserves_monitoring():
+    app = MonitoringMixin.__new__(MonitoringMixin)
+    app.is_monitoring = True
+    app.status_toast = ""
+    app.live_capture = type("MockCapture", (), {
+        "start": lambda self: (_ for _ in ()).throw(PermissionError("[Errno 1] Operation not permitted"))
+    })()
+
+    app._start_capture_safe()
+
+    assert app.is_monitoring is True
+    assert app.live_capture is None
+    assert "Live capture notice" in app.status_toast

@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 import threading
 from typing import Optional
 
@@ -171,6 +172,9 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
             return []
 
     def refresh_network_context(self):
+        saved_iface = self.db.get_config("network.interface", "")
+        if saved_iface and not os.environ.get("ARPIE_IFACE"):
+            os.environ["ARPIE_IFACE"] = saved_iface
         self.network_context = detect_network_context(self.get_trusted_ssids())
         self.local_ip, self.subnet_cidr = local_ipv4_and_cidr(self.network_context.interface)
         if not self.local_ip:

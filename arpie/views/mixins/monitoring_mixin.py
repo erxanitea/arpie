@@ -248,6 +248,9 @@ class MonitoringMixin(MixinBase):
 
 
         self.update_monitoring_ui()
+        self.update_view_content()
+        if self.page:
+            self.page.update()
 
     def _initial_arp_sweep(self, ctx):
         from arpie.network import arp_sweep, mac_vendor, local_ipv4_and_cidr
@@ -291,24 +294,14 @@ class MonitoringMixin(MixinBase):
             if self.live_capture:
                 self.live_capture.start()
         except PermissionError:
-            self.status_toast = "Live capture requires administrator privileges (sudo arpie or setcap CAP_NET_RAW)."
-            self.is_monitoring = False
+            self.status_toast = "Live capture notice: Deep packet inspection requires sudo or CAP_NET_RAW. Passive interface monitoring active."
             self.live_capture = None
-            with suppress(Exception):
-                self.update_monitoring_ui()
-                if self.page:
-                    self.page.update()
         except Exception as e:
             if "Operation not permitted" in str(e):
-                self.status_toast = "Live capture requires administrator privileges (sudo arpie or setcap CAP_NET_RAW)."
+                self.status_toast = "Live capture notice: Deep packet inspection requires sudo or CAP_NET_RAW. Passive interface monitoring active."
             else:
                 self.status_toast = f"Live sniffing notice: {e}"
-            self.is_monitoring = False
             self.live_capture = None
-            with suppress(Exception):
-                self.update_monitoring_ui()
-                if self.page:
-                    self.page.update()
 
     def toggle_monitoring(self):
         self.is_monitoring = not self.is_monitoring
@@ -321,6 +314,16 @@ class MonitoringMixin(MixinBase):
                 self.live_capture = None
         else:
             self.last_resume_time = time.time()
+            if not self.engine:
+                ctx = self.network_context or self.refresh_network_context()
+                gw_ip = getattr(ctx, "gateway_ip", None)
+                self.engine = self._configured_detection_engine(gateway_ip=gw_ip)
+            if not self.session_id:
+                ctx = self.network_context or self.refresh_network_context()
+                ssid = getattr(ctx, "ssid", None)
+                classification = getattr(ctx, "classification", "public-untrusted")
+                iface = getattr(ctx, "interface", "")
+                self.session_id = self.db.start_session(ssid, classification, iface, source="live", operator_id=self.operator_id)
             if not self.live_capture:
                 ctx = self.network_context or self.refresh_network_context()
                 iface = getattr(ctx, "interface", "")
@@ -330,82 +333,116 @@ class MonitoringMixin(MixinBase):
 
         self.update_monitoring_ui()
         self.update_view_content()
-        self.page.update()
+        if self.page:
+            self.page.update()
 
     async def _timer_task(self):
         poll_count = 0
+        last_io_pkts = None
         while True:
-            await asyncio.sleep(1)
-            poll_count += 1
-            if poll_count >= 2:
-                poll_count = 0
-                if self.current_screen == "app_shell":
-                    latest = self.db.get_latest_session(self.operator_id)
-                    current_sid = latest["id"] if latest else None
-                    if not self.is_monitoring and current_sid != self.session_id:
-                        if latest:
-                            self._restore_session_from_db()
-                        else:
-                            self.session_id = None
-                            self.all_alerts_list = []
-                            self.devices_inventory = []
-                            self.packets_count = 0
-                            self.traffic_history = [0] * 12
-                            self.top_talkers_data = []
-                            self.threats_count = 0
-                        self.update_view_content()
+            try:
+                await asyncio.sleep(1)
+                poll_count += 1
+                if poll_count >= 2:
+                    poll_count = 0
+                    if self.current_screen == "app_shell":
+                        latest = self.db.get_latest_session(self.operator_id)
+                        current_sid = latest["id"] if latest else None
+                        if not self.is_monitoring and current_sid != self.session_id:
+                            if latest:
+                                self._restore_session_from_db()
+                            else:
+                                self.session_id = None
+                                self.all_alerts_list = []
+                                self.devices_inventory = []
+                                self.packets_count = 0
+                                self.traffic_history = [0] * 12
+                                self.top_talkers_data = []
+                                self.threats_count = 0
+                            self.update_view_content()
+                            if self.page:
+                                self.page.update()
+
+                if self.is_monitoring and self.last_resume_time > 0 and self.current_screen == "app_shell":
+                    elapsed = int(self.accumulated_seconds + (time.time() - self.last_resume_time))
+                    hrs = elapsed // 3600
+                    mins = (elapsed % 3600) // 60
+                    secs = elapsed % 60
+                    timestr = f"{hrs:02d}:{mins:02d}:{secs:02d}"
+                    self.timer_text.value = timestr
+                    self.sidebar_timer_text.value = timestr
+
+                    with suppress(Exception):
+                        if getattr(self.timer_text, "page", None):
+                            self.timer_text.update()
+                        if getattr(self.sidebar_timer_text, "page", None):
+                            self.sidebar_timer_text.update()
+
+                    with suppress(Exception):
+                        import psutil
+                        net_io = psutil.net_io_counters(pernic=True)
+                        iface = getattr(self.network_context, "interface", None)
+                        io_stat = net_io.get(iface) if iface else None
+                        if not io_stat:
+                            for if_name, st in net_io.items():
+                                if if_name != "lo" and (st.packets_recv + st.packets_sent) > 0:
+                                    io_stat = st
+                                    break
+                        if io_stat:
+                            cur_pkts = io_stat.packets_recv + io_stat.packets_sent
+                            if last_io_pkts is not None and cur_pkts >= last_io_pkts:
+                                io_delta = cur_pkts - last_io_pkts
+                                if not self.live_capture or self._current_interval_total == 0:
+                                    self._current_interval_total += io_delta
+                                    self.packets_count += io_delta
+                            last_io_pkts = cur_pkts
+
+                    self._tick_counter += 1
+                    interval_limit = max(1, getattr(self, "traffic_interval_sec", 1))
+                    if self._tick_counter >= interval_limit:
+                        self._tick_counter = 0
+                        now_ts = datetime.datetime.now().strftime("%H:%M:%S")
+
+                        rate_total = round(self._current_interval_total / interval_limit)
+                        rate_susp = round(self._current_interval_suspicious / interval_limit)
+                        rate_blocked = round(self._current_interval_blocked / interval_limit)
+
+                        self.traffic_history.append(rate_total)
+                        self.suspicious_history.append(rate_susp)
+                        self.blocked_history.append(rate_blocked)
+                        self.traffic_timestamps.append(now_ts)
+
+                        while len(self.traffic_history) > 12:
+                            self.traffic_history.pop(0)
+                        while len(self.suspicious_history) > 12:
+                            self.suspicious_history.pop(0)
+                        while len(self.blocked_history) > 12:
+                            self.blocked_history.pop(0)
+                        while len(self.traffic_timestamps) > 12:
+                            self.traffic_timestamps.pop(0)
+
+                        self._current_interval_total = 0
+                        self._current_interval_suspicious = 0
+                        self._current_interval_blocked = 0
+
+                        if self.current_view == "dashboard":
+                            slot = getattr(self, "dashboard_chart_slot", None)
+                            if slot and getattr(slot, "page", None):
+                                try:
+                                    from arpie.views.components.traffic_chart import build_spline_chart_content as _build_spline_chart_content
+                                    slot.content = _build_spline_chart_content(self)
+                                    slot.update()
+                                except Exception:
+                                    self.update_view_content()
+                            else:
+                                self.update_view_content()
+
+                    with suppress(Exception):
                         if self.page:
                             self.page.update()
-
-            if self.is_monitoring and self.last_resume_time > 0 and self.current_screen == "app_shell":
-                elapsed = int(self.accumulated_seconds + (time.time() - self.last_resume_time))
-                hrs = elapsed // 3600
-                mins = (elapsed % 3600) // 60
-                secs = elapsed % 60
-                timestr = f"{hrs:02d}:{mins:02d}:{secs:02d}"
-                self.timer_text.value = timestr
-                self.sidebar_timer_text.value = timestr
-
-                self._tick_counter += 1
-                interval_limit = max(1, getattr(self, "traffic_interval_sec", 1))
-                if self._tick_counter >= interval_limit:
-                    self._tick_counter = 0
-                    now_ts = datetime.datetime.now().strftime("%H:%M:%S")
-
-                    rate_total = round(self._current_interval_total / interval_limit)
-                    rate_susp = round(self._current_interval_suspicious / interval_limit)
-                    rate_blocked = round(self._current_interval_blocked / interval_limit)
-
-                    self.traffic_history.append(rate_total)
-                    self.suspicious_history.append(rate_susp)
-                    self.blocked_history.append(rate_blocked)
-                    self.traffic_timestamps.append(now_ts)
-
-                    while len(self.traffic_history) > 12:
-                        self.traffic_history.pop(0)
-                    while len(self.suspicious_history) > 12:
-                        self.suspicious_history.pop(0)
-                    while len(self.blocked_history) > 12:
-                        self.blocked_history.pop(0)
-                    while len(self.traffic_timestamps) > 12:
-                        self.traffic_timestamps.pop(0)
-
-                    self._current_interval_total = 0
-                    self._current_interval_suspicious = 0
-                    self._current_interval_blocked = 0
-
-                    if self.current_view == "dashboard":
-                        slot = getattr(self, "dashboard_chart_slot", None)
-                        if slot and getattr(slot, "page", None):
-                            try:
-                                from arpie.views.components.traffic_chart import build_spline_chart_content as _build_spline_chart_content
-                                slot.content = _build_spline_chart_content(self)
-                                slot.update()
-                            except Exception:
-                                self.update_view_content()
-                        else:
-                            self.update_view_content()
-
-                with suppress(Exception):
-                    if self.page:
-                        self.page.update()
+                elif not self.is_monitoring:
+                    last_io_pkts = None
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                pass
