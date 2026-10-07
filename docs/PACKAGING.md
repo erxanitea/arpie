@@ -89,7 +89,7 @@ Notes:
 ### Older Flet (0.24–0.7x): `flet pack`
 
 ```bash
-flet pack main.py --name Arpie --icon assets/logo.png \
+flet pack main.py --name Arpie --icon assets/icon.png \
   --add-data "assets:assets" --add-data "sample_pcaps:sample_pcaps"
 ```
 

@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 import flet as ft
 
 from arpie.views.alerts import render_alerts_view
@@ -80,6 +82,18 @@ class NavigationMixin(MixinBase):
         self.toast_banner.bgcolor = "#FEF2F2" if is_failure else "#ECFDF5"
         self.toast_banner.border = ft.Border.all(1, "#FECACA" if is_failure else "#A7F3D0")
 
+    def _sync_sidebar_badges(self):
+        badge_counts = {
+            "alerts": len(getattr(self, "all_alerts_list", [])),
+            "seal": len(getattr(self, "active_blocks", [])),
+        }
+        for vid, count in badge_counts.items():
+            ctrl = getattr(self, "sidebar_badge_refs", {}).get(vid)
+            if ctrl is not None:
+                ctrl.value = str(count)
+                with suppress(Exception):
+                    ctrl.update()
+
     def update_view_content(self):
         title_map = {
             "dashboard": ("Dashboard", "Real-time overview of your network and security status"),
@@ -96,6 +110,7 @@ class NavigationMixin(MixinBase):
         self.top_bar_subtitle.value = subtitle
 
         self._sync_toast_banner()
+        self._sync_sidebar_badges()
 
         for vid, btn, icon_ctrl, text_ctrl, icon_on, icon_off in self.sidebar_btn_refs:
             is_active = (self.current_view == vid)

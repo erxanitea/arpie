@@ -21,6 +21,7 @@ mkdir -p "$STAGE_DIR/usr/lib/arpie"
 mkdir -p "$STAGE_DIR/usr/bin"
 mkdir -p "$STAGE_DIR/usr/share/applications"
 mkdir -p "$STAGE_DIR/usr/share/icons/hicolor/256x256/apps"
+mkdir -p "$STAGE_DIR/usr/share/icons/hicolor/512x512/apps"
 mkdir -p "$STAGE_DIR/usr/lib/systemd/user"
 
 if [ -d "$BUILD_DIR/bundle" ]; then
@@ -59,6 +60,7 @@ Type=Application
 Categories=Network;Security;System;
 Keywords=security;ids;arp;wifi;network;
 StartupNotify=true
+StartupWMClass=arpie
 EOF
 chmod 644 "$STAGE_DIR/usr/share/applications/arpie.desktop"
 
@@ -68,7 +70,9 @@ if [ -z "$ICON_SRC" ]; then
 fi
 if [ -n "$ICON_SRC" ] && [ -f "$ICON_SRC" ]; then
     cp -f "$ICON_SRC" "$STAGE_DIR/usr/share/icons/hicolor/256x256/apps/arpie.png"
+    cp -f "$ICON_SRC" "$STAGE_DIR/usr/share/icons/hicolor/512x512/apps/arpie.png"
     chmod 644 "$STAGE_DIR/usr/share/icons/hicolor/256x256/apps/arpie.png"
+    chmod 644 "$STAGE_DIR/usr/share/icons/hicolor/512x512/apps/arpie.png"
 fi
 
 cat > "$STAGE_DIR/usr/lib/systemd/user/arpie.service" << 'EOF'

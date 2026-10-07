@@ -18,6 +18,7 @@ def build_sidebar(app) -> ft.Container:
     nav_items.append(("settings", "Settings", ft.Icons.SETTINGS_OUTLINED, ft.Icons.SETTINGS_ROUNDED, None))
 
     app.sidebar_btn_refs = []
+    app.sidebar_badge_refs = {}
     nav_controls: list[ft.Control] = []
     for v_id, label, icon_off, icon_on, badge in nav_items:
         is_active = (app.current_view == v_id)
@@ -25,11 +26,13 @@ def build_sidebar(app) -> ft.Container:
         text_ctrl = ft.Text(label, size=13, weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.W_500, color="#FFFFFF" if is_active else "#94A3B8")
 
         row_content: list[ft.Control] = [icon_ctrl, text_ctrl]
-        if badge:
+        if badge is not None:
+            badge_text_ctrl = ft.Text(badge, size=10, weight=ft.FontWeight.BOLD, color="#FFFFFF")
+            app.sidebar_badge_refs[v_id] = badge_text_ctrl
             row_content.extend([
                 ft.Container(expand=True),
                 ft.Container(
-                    content=ft.Text(badge, size=10, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
+                    content=badge_text_ctrl,
                     bgcolor="#DC2626", border_radius=10, padding=ft.Padding.symmetric(horizontal=6, vertical=2),
                 )
             ])

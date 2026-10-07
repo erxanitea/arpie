@@ -153,6 +153,7 @@ class ArpieApp(NavigationMixin, MonitoringMixin, SessionRestoreMixin, AuthMixin,
         )
 
         self.sidebar_btn_refs = []
+        self.sidebar_badge_refs = {}
         self.content_area = ft.Container(expand=True, bgcolor="#F8FAFC", padding=20)
         # Persistent global toast, shown above whatever page is active so
         # action feedback (e.g. Seal Mode results) is visible no matter

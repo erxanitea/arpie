@@ -67,11 +67,15 @@ if TYPE_CHECKING:
         sidebar_btn_text: Any
         sidebar_toggle_btn: Any
         sidebar_btn_refs: list
+        sidebar_badge_refs: dict[str, Any]
         content_area: Any
         top_bar_title: Any
         top_bar_subtitle: Any
         root_container: Any
         file_picker: Any
+        toast_banner: Any
+        toast_text: Any
+        toast_icon: Any
 
         def render(self) -> None: ...
         def update_view_content(self) -> None: ...

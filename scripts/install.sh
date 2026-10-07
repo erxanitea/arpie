@@ -56,15 +56,23 @@ ln -sfn "$installed_executable" "$BIN_DIR/$APP_NAME"
 # Desktop launcher and icon registration
 APPS_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/applications"
 ICON_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/icons/hicolor/256x256/apps"
+ICON_DIR_512="${XDG_DATA_HOME:-${HOME}/.local/share}/icons/hicolor/512x512/apps"
 SYSTEMD_USER_DIR="${HOME}/.config/systemd/user"
-mkdir -p "$APPS_DIR" "$ICON_DIR" "$SYSTEMD_USER_DIR"
+mkdir -p "$APPS_DIR" "$ICON_DIR" "$ICON_DIR_512" "$SYSTEMD_USER_DIR"
 
-icon_source="$(find "$INSTALL_ROOT" -maxdepth 3 -name "icon.png" 2>/dev/null | head -n 1 || true)"
-if [ -z "$icon_source" ]; then
-    icon_source="$(find "$INSTALL_ROOT" -maxdepth 3 -name "logo.png" -o -name "arpie-logo.png" 2>/dev/null | head -n 1 || true)"
+icon_source="$(find "$INSTALL_ROOT" -name "icon.png" 2>/dev/null | head -n 1 || true)"
+if [ -z "$icon_source" ] || [ ! -f "$icon_source" ]; then
+    if curl -fsSL "https://raw.githubusercontent.com/${REPOSITORY}/main/assets/icon.png" -o "$tmp_dir/icon.png" 2>/dev/null; then
+        icon_source="$tmp_dir/icon.png"
+    fi
+fi
+if [ -z "$icon_source" ] || [ ! -f "$icon_source" ]; then
+    icon_source="$(find "$INSTALL_ROOT" -name "logo.png" -o -name "arpie-logo.png" 2>/dev/null | head -n 1 || true)"
 fi
 if [ -n "$icon_source" ] && [ -f "$icon_source" ]; then
     cp -f "$icon_source" "$ICON_DIR/arpie.png"
+    cp -f "$icon_source" "$ICON_DIR_512/arpie.png"
+    cp -f "$icon_source" "$INSTALL_ROOT/icon.png" 2>/dev/null || true
 fi
 
 cat > "$APPS_DIR/arpie.desktop" <<EOF
@@ -79,10 +87,12 @@ Type=Application
 Categories=Network;Security;System;
 Keywords=security;ids;arp;wifi;network;
 StartupNotify=true
+StartupWMClass=arpie
 EOF
 
 chmod +x "$APPS_DIR/arpie.desktop" 2>/dev/null || true
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$APPS_DIR" 2>/dev/null || true
+command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t -f "${XDG_DATA_HOME:-${HOME}/.local/share}/icons/hicolor" 2>/dev/null || true
 
 cat > "$SYSTEMD_USER_DIR/arpie.service" <<EOF
 [Unit]

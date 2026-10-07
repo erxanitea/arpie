@@ -66,6 +66,9 @@ jobs:
       - name: Package artifact
         shell: bash
         run: |
+          mkdir -p build/${{ matrix.target }}/assets
+          cp -f assets/icon.png build/${{ matrix.target }}/icon.png 2>/dev/null || true
+          cp -f assets/icon.png build/${{ matrix.target }}/assets/icon.png 2>/dev/null || true
           cd build/${{ matrix.target }}
           if [ "${{ matrix.target }}" = "windows" ]; then
             7z a ../../arpie-${{ matrix.target }}.zip ./*
