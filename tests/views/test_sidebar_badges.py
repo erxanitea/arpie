@@ -1,3 +1,6 @@
+from typing import cast
+from unittest.mock import MagicMock
+
 import flet as ft
 
 from arpie.views.components.sidebar import build_sidebar
@@ -25,7 +28,13 @@ class DummyApp(NavigationMixin):
         self.toast_text = ft.Text("")
         self.toast_icon = ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED)
         self.content_area = ft.Container()
-        self.page = None
+        self.page = cast(ft.Page, MagicMock())
+
+    def _restore_session_from_db(self) -> None:
+        pass
+
+    def refresh_network_context(self) -> None:
+        pass
 
 
 def test_sidebar_badges_reflect_exact_counts():
