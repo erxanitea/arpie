@@ -118,10 +118,6 @@ fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
 fi
-if command -v setcap >/dev/null 2>&1; then
-    setcap cap_net_raw,cap_net_admin=eip /usr/lib/arpie/arpie 2>/dev/null || true
-    setcap cap_net_raw,cap_net_admin=eip /usr/lib/arpie/Arpie 2>/dev/null || true
-fi
 EOF
 chmod 755 "$STAGE_DIR/DEBIAN/postinst"
 

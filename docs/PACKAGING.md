@@ -109,9 +109,7 @@ dist/arpie-cli --pcap sample_pcaps/demo_attack.pcap
 
 ### Privileges (required for live capture + Seal Mode)
 - **Windows:** run as Administrator.
-- **Linux/macOS:** run with `sudo`, or grant capture capability once:
-  `sudo setcap cap_net_raw,cap_net_admin=eip $(readlink -f $(which python))`
-  (or the packaged binary). Seal Mode's `iptables` still needs root/`CAP_NET_ADMIN`.
+- **Linux/macOS:** run with `sudo` (or `pkexec`), or use the CLI daemon `sudo arpie --daemon` for live NIDS packet sniffing. Do not set `setcap` on the packaged GUI binary, as Linux capabilities force `AT_SECURE` mode and break dynamic loading of bundled Flutter shared libraries. Unprivileged execution runs in passive interface monitoring mode.
 - PCAP replay mode needs **no** privileges — good for a safe first look.
 
 ### Windows: Npcap

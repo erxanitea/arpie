@@ -51,7 +51,16 @@ rm -rf "$INSTALL_ROOT"
 mkdir -p "$INSTALL_ROOT"
 cp -a "$tmp_dir/package/." "$INSTALL_ROOT/"
 installed_executable="$(find_executable "$INSTALL_ROOT")"
-ln -sfn "$installed_executable" "$BIN_DIR/$APP_NAME"
+
+if command -v setcap >/dev/null 2>&1; then
+    setcap -r "$installed_executable" 2>/dev/null || true
+fi
+
+cat > "$BIN_DIR/$APP_NAME" <<EOF
+#!/bin/sh
+exec "$installed_executable" "\$@"
+EOF
+chmod 755 "$BIN_DIR/$APP_NAME"
 
 # Desktop launcher and icon registration
 APPS_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/applications"
@@ -108,16 +117,11 @@ RestartSec=5s
 WantedBy=default.target
 EOF
 
-if command -v setcap >/dev/null 2>&1; then
-    sudo setcap cap_net_raw,cap_net_admin=eip "$installed_executable" 2>/dev/null || true
-fi
-
 printf '\nArpie installed successfully.\n'
 printf '• Run directly from terminal: arpie\n'
 printf '• Desktop app entry created in your Linux Application Menu (Search "Arpie" or pin to dock)\n'
-printf '• For live packet capture & NIDS attack detection without sudo:\n'
-printf '    sudo setcap cap_net_raw,cap_net_admin=eip %s\n' "$installed_executable"
-printf '  Or launch directly with: sudo arpie\n'
+printf '• For live packet capture & NIDS attack detection:\n'
+printf '  Run the desktop app or launch daemon with: arpie --daemon\n'
 printf '• To run Arpie permanently in the background as a systemd service:\n'
 printf '    systemctl --user daemon-reload\n'
 printf '    systemctl --user enable --now arpie\n\n'
